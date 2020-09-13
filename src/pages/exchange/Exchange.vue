@@ -78,7 +78,6 @@
                   <span class="tab_item" :class="{active:historyActiveTab=='cur'}">當前訂單</span>
                   <span class="tab_item" :class="{active:historyActiveTab=='his'}">歷史訂單</span>
               </div>
-              
             </div>
             <div class="history_title">
                 <span>市場/建立時間</span>
@@ -89,8 +88,21 @@
             <div class="history_footer"></div>
           </div>
           <div class="trading_container">
-            <div class="trading_tab"></div>
+            <div class="trading_tab">
+              <span>買入/賣出</span>
+              <div class="tab_list">
+                  <span class="tab_item" :class="{active:tradingActiveTab=='limit'}">當前訂單</span>
+                  <span class="tab_item" :class="{active:tradingActiveTab=='market'}">歷史訂單</span>
+              </div>
+              
+            </div>
+            <div class="trading_main">
+                <div class="trading_buy"></div>
+                <div class="trading_sell"></div>
+            </div>
+            <div class="trading_footer">
 
+            </div>
           </div>
         </div>
       </div>
@@ -342,7 +354,43 @@ $night-color: #fff;
         }
         .trading_container {
           flex: 0 0 42%;
-          background-color: red;
+          .trading_tab {
+            background-color: #192330;
+            padding: 0 9px;
+            line-height: 33px;
+            height: 33px;
+            margin-bottom: 5px;
+            .tab_list {
+              float: right;
+              display: flex;
+              .tab_item {
+                margin-left: 5px;
+              }
+              .active {
+                border-bottom: 2px solid #FFA800;
+              }
+            }
+          }
+          .trading_main{
+            display: flex;
+            justify-content: space-between;
+            height: 295px;
+            margin-bottom: 5px;
+            .trading_buy {
+              background-color: #192330;
+              flex: 0 0 49%;
+            }
+            .trading_sell {
+              background-color: #192330;
+              flex: 0 0 49%;
+            }
+          }
+          .trading_footer {
+            line-height: 33px;
+            height: 33px;
+            background-color: #192330;
+
+          }
         }
       }
     }
@@ -1139,7 +1187,8 @@ export default {
         rows: []
       },
       fullTrade: {},
-      historyActiveTab: "cur"
+      historyActiveTab: "cur",
+      tradingActiveTab: "limit"
     };
   },
   filters: {
