@@ -70,6 +70,29 @@
           </div>
           <DepthGraph :class="{hidden:currentImgTable==='k'}" ref="depthGraph"></DepthGraph>
         </div>
+        <div class="tradingArea">
+          <div class="history_container">
+            <div class="history_tab">
+              <span>我的訂單</span>
+              <div class="tab_list">
+                  <span class="tab_item" :class="{active:historyActiveTab=='cur'}">當前訂單</span>
+                  <span class="tab_item" :class="{active:historyActiveTab=='his'}">歷史訂單</span>
+              </div>
+              
+            </div>
+            <div class="history_title">
+                <span>市場/建立時間</span>
+                <span>類別/價格</span>
+                <span>成交/訂單量</span>
+            </div>
+            <div class="history_record"></div>
+            <div class="history_footer"></div>
+          </div>
+          <div class="trading_container">
+            <div class="trading_tab"></div>
+
+          </div>
+        </div>
       </div>
       <div class="left plate-wrap" style="position:relative;">
         <div class="lightning-panel" v-if="showCountDown" :style="{backgroundColor:countDownBgColor}">
@@ -271,6 +294,55 @@ $night-color: #fff;
           a {
             color: #f0a70a;
           }
+        }
+      }
+      .tradingArea {
+        display: flex;
+        height: 375px;
+        justify-content: space-between;
+        font-size: 12px;
+        .history_container {
+          flex: 0 0  57%;
+          .history_tab {
+            background-color: #192330;
+            padding: 0 9px;
+            line-height: 33px;
+            height: 33px;
+            margin-bottom: 5px;
+            .tab_list {
+              float: right;
+              display: flex;
+              .tab_item {
+                margin-left: 5px;
+              }
+              .active {
+                border-bottom: 2px solid #FFA800;
+              }
+            }
+          }
+          .history_title {
+            display: flex;
+            background-color: #192330;
+            padding: 0 9px;
+            line-height: 33px;
+            height: 33px;
+            justify-content: space-between;
+            margin-bottom: 5px;
+          }
+          .history_record {
+            background-color: #192330;
+            margin-bottom: 5px;
+            height: 260px;
+          }
+          .history_footer {
+            background-color: #192330;
+            line-height: 33px;
+            height: 33px;
+          }
+        }
+        .trading_container {
+          flex: 0 0 42%;
+          background-color: red;
         }
       }
     }
@@ -1066,7 +1138,8 @@ export default {
         ],
         rows: []
       },
-      fullTrade: {}
+      fullTrade: {},
+      historyActiveTab: "cur"
     };
   },
   filters: {
