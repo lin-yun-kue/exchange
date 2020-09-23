@@ -113,22 +113,22 @@
           <img v-if="lang == '简体中文' && publishType=='QIANGGOU'" src="../../assets/images/lightning-bg2.png"></img>
           <img v-if="lang == 'English' && publishType=='QIANGGOU'" src="../../assets/images/lightning-bg2-en.png"></img>
         </div>
-        <div class="handlers">
+        <!-- <div class="handlers">
           <span @click="changePlate('all')" class="handler handler-all" :class="{active:selectedPlate=='all'}"></span>
           <span @click="changePlate('buy')" class="handler handler-green" :class="{active:selectedPlate=='buy'}"></span>
           <span @click="changePlate('sell')" class="handler handler-red" :class="{active:selectedPlate=='sell'}"></span>
-        </div>
+        </div> -->
         <Table v-show="selectedPlate!='buy'" @on-current-change="buyPlate" highlight-row ref="currentRowTable" class="sell_table" :columns="plate.columns" :data="plate.askRows" :no-data-text="$t('common.nodata')"></Table>
         <div class="plate-nowprice">
           <span class="price" :class="{buy:currentCoin.change>0,sell:currentCoin.change<0}">{{currentCoin.price | toFixed(baseCoinScale)}}</span>
-          <span v-if="currentCoin.change>0" class="buy">↑</span>
+          <!-- <span v-if="currentCoin.change>0" class="buy">↑</span>
           <span v-else-if="currentCoin.change<0" class="sell">↓</span>
-          <span class="price-cny"> ≈ {{currentCoin.usdRate*CNYRate | toFixed(2)}} CNY</span>
+          <span class="price-cny"> ≈ {{currentCoin.usdRate*CNYRate | toFixed(2)}} CNY</span> -->
         </div>
         <Table v-show="selectedPlate!='sell'" @on-current-change="sellPlate" highlight-row class="buy_table" :class="{hidden:selectedPlate==='all'}" :columns="plate.columns" :data="plate.bidRows" :no-data-text="$t('common.nodata')"></Table>
-        <div class="trade-wrap" style="margin-top: 10px;" v-show="!showCountDown">
+        <!-- <div class="trade-wrap" style="margin-top: 10px;" v-show="!showCountDown">
           <Table height="264" :columns="trade.columns" :data="trade.rows" :no-data-text="$t('common.nodata')"></Table>
-        </div>
+        </div> -->
 
       </div>
     </div>
@@ -1192,7 +1192,9 @@ export default {
       tradingActiveTab: "limit",
       hub: null,
       proxy: null,
-      sideCountryID: "COIN"
+      sideCountryID: "COIN",
+      pairID: null,
+      currentHref: "btc_usdt"
     };
   },
   filters: {
@@ -1391,8 +1393,8 @@ export default {
       this.getCNYRate();
       this.getSymbolScale();
       this.getCoinInfo();
+      this.startWebsock();
       this.getSymbol(); //包含 K线图、getFavor、startWebsock等
-      this.getPlate(); //买卖盘
       this.getPlateFull();
       this.getTrade();
       if (this.isLogin) {
@@ -1410,7 +1412,7 @@ export default {
     },
     changeBaseCion(str, sideCountryID) {
       this.basecion = str;
-      this.connectSignal(sideCountryID, this.sideCountryID);
+      this.connectTickerSignal(sideCountryID, this.sideCountryID);
       this.sideCountryID = sideCountryID;
 console.log( 'changeBaseCion',str, this.coins )
       if(str == "usdt"){
@@ -1426,15 +1428,15 @@ console.log( 'changeBaseCion',str, this.coins )
         this.dataIndex = this.coins.favor;
       }
     },
-    changePlate(str) {
-      if (str != "all") {
-        this.plate.maxPostion = 20;
-      } else {
-        this.plate.maxPostion = 10;
-      }
-      this.getPlate(str);
-      //this.selectedPlate = str;
-    },
+    // changePlate(str) {
+    //   if (str != "all") {
+    //     this.plate.maxPostion = 20;
+    //   } else {
+    //     this.plate.maxPostion = 10;
+    //   }
+    //   this.getPlate(str);
+    //   //this.selectedPlate = str;
+    // },
     changeImgTable(str) {
       this.currentImgTable = str;
     },
@@ -1804,22 +1806,22 @@ console.log( 'changeBaseCion',str, this.coins )
         });
     },
     getSymbol() {
-    $.ajax({
-      type: 'GET',
-      url:　 process.env.apiURL + "/zh-tw/Common/systemSettingEX",
-      headers: {
-        NationID: 1
-      }
-    })
-    .done(response => {
-      var resp = [];
+      $.ajax({
+        type: 'GET',
+        url:　 process.env.apiURL + "/zh-tw/Common/systemSettingEX",
+        headers: {
+          NationID: 1
+        }
+      })
+      .done(response => {
+        var resp = [];
 
-      var exchangeData = response.data.find(x => x.key == "exchange");
-      var cryptos = exchangeData.value.cryptos.filter(x => x.fromCoinName == "BTC" || x.fromCoinName == "USDT");
-      var flatMoney = exchangeData.value.flatMoneys.filter(x => x.fromCoinName == "TWD");
-      var targetData = [...cryptos, ...flatMoney];
-      
-      for(var i = 0; i < targetData.length; i++){
+        var exchangeData = response.data.find(x => x.key == "exchange");
+        var cryptos = exchangeData.value.cryptos.filter(x => x.fromCoinName == "BTC" || x.fromCoinName == "USDT");
+        var flatMoney = exchangeData.value.flatMoneys.filter(x => x.fromCoinName == "TWD");
+        var targetData = [...cryptos, ...flatMoney];
+
+        for(var i = 0; i < targetData.length; i++){
         var record = targetData[i];
         for(var j = 0; j < record.pairs.length; j++){
           var pair = record.pairs[j];
@@ -1836,13 +1838,14 @@ console.log( 'changeBaseCion',str, this.coins )
             "lastDayClose":0,
             "usdRate":0,
             "baseUsdRate":0,
-            "zone":0
+            "zone":0,
+            "pairID": pair.pairID
           })
         }
       }
-        
-      //先清空已有数据
-      for (var i = 0; i < resp.length; i++) {
+
+        //先清空已有数据
+        for (var i = 0; i < resp.length; i++) {
           var coin = resp[i];
           coin.base = resp[i].symbol.split("/")[1];
           this.coins[coin.base] = [];
@@ -1850,7 +1853,7 @@ console.log( 'changeBaseCion',str, this.coins )
           this.coins._map = [];
           this.coins.favor = [];
         }
-      for (var i = 0; i < resp.length; i++) {
+        for (var i = 0; i < resp.length; i++) {
           var coin = resp[i];
           coin.price = resp[i].close = resp[i].close.toFixed(
             this.baseCoinScale
@@ -1874,13 +1877,11 @@ console.log( 'changeBaseCion',str, this.coins )
             this.form.buy.limitPrice = this.form.sell.limitPrice = coin.price;
           }
         }
-      console.log("getSymbol", this.coins);
-      require(["../../assets/js/exchange.js"], function(e) {
+        console.log("getSymbol", this.coins);
+        require(["../../assets/js/exchange.js"], function(e) {
           e.clickScTab();
         });
-      this.startWebsock();
-      
-    })
+      })
     },
     getCoinInfo(){
       //获取精度
@@ -1943,16 +1944,37 @@ console.log( 'changeBaseCion',str, this.coins )
           }
         });
     },
-    getPlate(str="") {
-      //买卖盘
-      var params = {};
-      params["symbol"] = this.currentCoin.symbol;
-      this.$http
-        .post(this.host + this.api.market.platemini, params)
-        .then(response => {
+    getPlate() {
+      const record = this.coins[this.basecion.toUpperCase()].find(x => x.href == this.currentHref);
+      this.subscribeOrderProxy(record.pairID)
+        .then(result => {
+          console.log("getPlate", result);
           this.plate.askRows = [];
           this.plate.bidRows = [];
-          let resp = response.body;
+          let resp = {
+            ask: {
+              items: []
+            },
+            bid: {
+              items: []
+            }
+          };
+
+          for(var i = 0; i < result.askPreOrders.length; i++){
+            const ask = result.askPreOrders[i];
+            resp.ask.items.push({
+              price: ask.unitPrice,
+              amount: ask.volume
+            });
+          }
+          for(var i = 0; i < result.bidPreOrders.length; i++){
+            const bid = result.bidPreOrders[i];
+            resp.bid.items.push({
+              price: bid.unitPrice,
+              amount: bid.volume
+            });
+          }
+
           if (resp.ask && resp.ask.items) {
             for (var i = 0; i < resp.ask.items.length; i++) {
               if (i == 0) {
@@ -2035,10 +2057,10 @@ console.log( 'changeBaseCion',str, this.coins )
               this.plate.bidTotle = totle;
             }
           }
-          if(str!=""){
-            this.selectedPlate = str;
-          }
-        });
+          // if(str!=""){
+          //   this.selectedPlate = str;
+          // }
+        })
     },
     getPlateFull() {
       //深度图
@@ -2101,10 +2123,11 @@ console.log( 'changeBaseCion',str, this.coins )
     },
     startWebsock() {
       this.hub = $.hubConnection(process.env.signalR);
+      this.proxy = this.hub.createHubProxy('TickerHub');
       this.hub.start()
         .done(() => {
           console.log("socket connet suc");
-          this.subscribeProxy(this.sideCountryID)
+          this.subscribeTickersProxy(this.sideCountryID)
             .then(result => {
               var targetData = result.find(x => x.currencyCode == this.basecion.toUpperCase());
               this.coins[this.basecion.toUpperCase()].forEach(item => {
@@ -2117,22 +2140,35 @@ console.log( 'changeBaseCion',str, this.coins )
               });
               this.changeBaseCion(this.basecion, this.sideCountryID);
             })
+          this.getPlate(); //买卖盘
         })
         .fail(() => console.log("socket connet fail"));
 
-      this.proxy = this.hub.createHubProxy('TickerHub');
-
-      
-      
-      
+      this.proxy
+        .on('SendTickersByNationID', result => {
+          const data = JSON.parse(result);
+          console.log("SendTickersByNationID", data);
+          var targetData = data.find(x => x.currencyCode == this.basecion.toUpperCase());
+              this.coins[this.basecion.toUpperCase()].forEach(item => {
+                var target = targetData.marketPriceList.find(x => x.pair == item.symbol);
+                item.close = target.buyPrice;
+                item.rose = target.upDownPercentage.toFixed(2) + "%";
+                item.high = target.high;
+                item.low = target.low;
+                item.volume = target.volume;
+              });
+        })
+        .on('SendPreOrderByNationID', result => {
+          const data = JSON.parse(result);
+        })
     },
-    subscribeProxy(id) {
+    subscribeTickersProxy(id) {
       return new Promise((resolve, reject) => {
         this.proxy
           .invoke('SubscribeTickersByNationID', '' + id, '1')
           .done(result => {
             const data = JSON.parse(result);
-            console.log("subscribeProxy", data);
+            console.log("subscribeTickersProxy", data);
             resolve(data)
           })
           .fail(error => {
@@ -2140,7 +2176,7 @@ console.log( 'changeBaseCion',str, this.coins )
           })
       })
     },
-    unsubscribePairProxy(id) {
+    unsubscribeTickersProxy(id) {
       return new Promise((resolve, reject) => {
         this.proxy
           .invoke('UnsubscribeTickersByNationID', '' + id, '1')
@@ -2152,17 +2188,44 @@ console.log( 'changeBaseCion',str, this.coins )
           })
       })
     },
-    connectSignal(newCountryID, oldCountryID) {
+    subscribeOrderProxy(id) {
+      
+      return new Promise((resolve, reject) => {
+        this.proxy
+          .invoke('SubscribePreOrdersByNationID', '' + id, '1')
+          .done(result => {
+            const data = JSON.parse(result);
+            resolve(data);
+          })
+          .fail(error => {
+            reject(error)
+          })
+      })
+    },
+    unsubscribeOrderProxy(id) {
+      return new Promise((resolve, reject) => {
+        this.proxy
+          .invoke('UnsubscribePreOrdersByNationID', '' + id, '1')
+          .done(result => {
+            // this.hub.stop()
+            resolve(result)
+          })
+          .fail(error => {
+            reject(error)
+          })
+      })
+    },
+    connectTickerSignal(newCountryID, oldCountryID) {
       if (!this.proxy || !this.hub) return
 
       if (oldCountryID) {
-        this.unsubscribePairProxy(oldCountryID)
+        this.unsubscribeTickersProxy(oldCountryID)
           .catch(this.showError);
       }
       if (newCountryID) {
-        this.subscribeProxy(newCountryID)
+        this.subscribeTickersProxy(newCountryID)
           .then(result => {
-            var targetData = result.find(x => x.currencyCode == this.basecion.toUpperCase());
+              var targetData = result.find(x => x.currencyCode == this.basecion.toUpperCase());
               this.coins[this.basecion.toUpperCase()].forEach(item => {
                 var target = targetData.marketPriceList.find(x => x.pair == item.symbol);
                 item.close = target.buyPrice;
@@ -2271,6 +2334,7 @@ console.log( 'changeBaseCion',str, this.coins )
         });
     },
     gohref(currentRow, oldCurrentRow) {
+      this.currentHref = currentRow.href;
       this.$router.push({
           name: 'ExchangePair',
           params: {
