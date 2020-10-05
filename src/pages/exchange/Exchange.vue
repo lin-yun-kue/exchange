@@ -70,6 +70,7 @@
           </div>
           <DepthGraph :class="{hidden:currentImgTable==='k'}" ref="depthGraph"></DepthGraph>
         </div>
+        <!-- todo connect api -->
         <div class="tradingArea">
           <div class="history_container">
             <div class="history_tab">
@@ -1390,18 +1391,18 @@ export default {
       this.currentCoin.base = base;
       this.$store.commit("navigate", "nav-exchange");
       this.$store.commit("setSkin", this.skin);
-      this.getCNYRate();
+      // this.getCNYRate();
       this.getSymbolScale();
       this.getCoinInfo();
-      this.startWebsock();
+      // this.startWebsock();
       this.getSymbol(); //包含 K线图、getFavor、startWebsock等
       this.getPlateFull();
       this.getTrade();
-      if (this.isLogin) {
-        this.getWallet(); //账户资产信息
-        this.getCurrentOrder(); //当前委托
-        this.getHistoryOrder(); //历史委托
-      }
+      // if (this.isLogin) {
+      //   this.getWallet(); //账户资产信息
+      //   this.getCurrentOrder(); //当前委托
+      //   this.getHistoryOrder(); //历史委托
+      // }
       this.sliderBuyLimitPercent = 0;
       this.sliderSellLimitPercent = 0;
       this.sliderBuyMarketPercent = 0;
@@ -1549,7 +1550,7 @@ console.log( 'changeBaseCion',str, this.coins )
           "move_logo_to_main_pane"
         ],
         custom_css_url: "bundles/common.css",
-        supported_resolutions: ["1", "5", "15", "30", "60", "1D", "1W", "1M"],
+        supported_resolutions: ["1", "5", "30", "60", "1D", "1W", "1M"],
         charts_storage_url: "http://saveload.tradingview.com",
         charts_storage_api_version: "1.1",
         client_id: "tradingview.com",
@@ -1581,7 +1582,6 @@ console.log( 'changeBaseCion',str, this.coins )
           },
           { text: "1min", resolution: "1", description: "1min" },
           { text: "5min", resolution: "5", description: "5min" },
-          { text: "15min", resolution: "15", description: "15min" },
           { text: "30min", resolution: "30", description: "30min" },
           {
             text: "1hour",
@@ -1814,35 +1814,35 @@ console.log( 'changeBaseCion',str, this.coins )
         }
       })
       .done(response => {
-        var resp = [];
+          var resp = [];
 
-        var exchangeData = response.data.find(x => x.key == "exchange");
-        var cryptos = exchangeData.value.cryptos.filter(x => x.fromCoinName == "BTC" || x.fromCoinName == "USDT");
-        var flatMoney = exchangeData.value.flatMoneys.filter(x => x.fromCoinName == "TWD");
-        var targetData = [...cryptos, ...flatMoney];
+          var exchangeData = response.data.find(x => x.key == "exchange");
+          var cryptos = exchangeData.value.cryptos.filter(x => x.fromCoinName == "BTC" || x.fromCoinName == "USDT");
+          var flatMoney = exchangeData.value.flatMoneys.filter(x => x.fromCoinName == "TWD");
+          var targetData = [...cryptos, ...flatMoney];
 
-        for(var i = 0; i < targetData.length; i++){
-        var record = targetData[i];
-        for(var j = 0; j < record.pairs.length; j++){
-          var pair = record.pairs[j];
-          resp.push({
-            "symbol": pair.toCoinName + '/' + record.fromCoinName,
-            "open":0,
-            "high":0,
-            "low":0,
-            "close":0,
-            "chg":0,
-            "change":0,
-            "volume":0,
-            "turnover":0,
-            "lastDayClose":0,
-            "usdRate":0,
-            "baseUsdRate":0,
-            "zone":0,
-            "pairID": pair.pairID
-          })
+          for(var i = 0; i < targetData.length; i++){
+          var record = targetData[i];
+          for(var j = 0; j < record.pairs.length; j++){
+            var pair = record.pairs[j];
+            resp.push({
+              "symbol": pair.toCoinName + '/' + record.fromCoinName,
+              "open":0,
+              "high":0,
+              "low":0,
+              "close":0,
+              "chg":0,
+              "change":0,
+              "volume":0,
+              "turnover":0,
+              "lastDayClose":0,
+              "usdRate":0,
+              "baseUsdRate":0,
+              "zone":0,
+              "pairID": pair.pairID
+            })
+          }
         }
-      }
 
         //先清空已有数据
         for (var i = 0; i < resp.length; i++) {
@@ -1881,6 +1881,8 @@ console.log( 'changeBaseCion',str, this.coins )
         require(["../../assets/js/exchange.js"], function(e) {
           e.clickScTab();
         });
+
+        this.startWebsock();
       })
     },
     getCoinInfo(){
@@ -1946,6 +1948,10 @@ console.log( 'changeBaseCion',str, this.coins )
     },
     getPlate() {
       const record = this.coins[this.basecion.toUpperCase()].find(x => x.href == this.currentHref);
+      if(!record){
+        console.warn("record undefined");
+        return;
+      }
       this.subscribeOrderProxy(record.pairID)
         .then(result => {
           console.log("getPlate", result);
@@ -2063,17 +2069,17 @@ console.log( 'changeBaseCion',str, this.coins )
         })
     },
     getPlateFull() {
-      //深度图
-      var params = {};
-      params["symbol"] = this.currentCoin.symbol;
-      this.$http
-        .post(this.host + this.api.market.platefull, params)
-        .then(response => {
-          var resp = response.body;
-          this.fullTrade = resp;
-          resp.skin = this.skin;
-          this.$refs.depthGraph.draw(resp);
-        });
+      // //深度图
+      // var params = {};
+      // params["symbol"] = this.currentCoin.symbol;
+      // this.$http
+      //   .post(this.host + this.api.market.platefull, params)
+      //   .then(response => {
+      //     var resp = response.body;
+      //     this.fullTrade = resp;
+      //     resp.skin = this.skin;
+      //     this.$refs.depthGraph.draw(resp);
+      //   });
     },
     updatePlate(type, row) {
       //发现该方法未被使用
@@ -2122,6 +2128,7 @@ console.log( 'changeBaseCion',str, this.coins )
         });
     },
     startWebsock() {
+      var that = this;
       this.hub = $.hubConnection(process.env.signalR);
       this.proxy = this.hub.createHubProxy('TickerHub');
       this.hub.start()
@@ -2141,6 +2148,19 @@ console.log( 'changeBaseCion',str, this.coins )
               this.changeBaseCion(this.basecion, this.sideCountryID);
             })
           this.getPlate(); //买卖盘
+    //   this.datafeed = new Datafeeds.WebsockFeed(
+    //     that.host + "/market",
+    //     that.currentCoin,
+    //     // stompClient,
+    //     that.baseCoinScale
+    // );
+
+          this.datafeed = new Datafeeds.WebsockFeed(
+            that.currentCoin,
+            that.proxy,
+            that.baseCoinScale
+          );
+          this.getKline();
         })
         .fail(() => console.log("socket connet fail"));
 
@@ -2158,9 +2178,120 @@ console.log( 'changeBaseCion',str, this.coins )
                 item.volume = target.volume;
               });
         })
-        .on('SendPreOrderByNationID', result => {
-          const data = JSON.parse(result);
+        .on('SendPreOrderByNationID', data => {
+          const result = JSON.parse(data);
+          console.log("SendPreOrderByNationID", data);
+          this.plate.askRows = [];
+          this.plate.bidRows = [];
+          let resp = {
+            ask: {
+              items: []
+            },
+            bid: {
+              items: []
+            }
+          };
+
+          for(var i = 0; i < result.askPreOrders.length; i++){
+            const ask = result.askPreOrders[i];
+            resp.ask.items.push({
+              price: ask.unitPrice,
+              amount: ask.volume
+            });
+          }
+          for(var i = 0; i < result.bidPreOrders.length; i++){
+            const bid = result.bidPreOrders[i];
+            resp.bid.items.push({
+              price: bid.unitPrice,
+              amount: bid.volume
+            });
+          }
+
+          if (resp.ask && resp.ask.items) {
+            for (var i = 0; i < resp.ask.items.length; i++) {
+              if (i == 0) {
+                resp.ask.items[i].totalAmount = resp.ask.items[i].amount;
+              } else {
+                resp.ask.items[i].totalAmount =
+                  resp.ask.items[i - 1].totalAmount + resp.ask.items[i].amount;
+              }
+            }
+            if (resp.ask.items.length >= this.plate.maxPostion) {
+              for (var i = this.plate.maxPostion; i > 0; i--) {
+                var ask = resp.ask.items[i - 1];
+                ask.direction = "SELL";
+                ask.position = i;
+                this.plate.askRows.push(ask);
+              }
+              const rows = this.plate.askRows,
+                len = rows.length,
+                totle = rows[0].totalAmount;
+              this.plate.askTotle = totle;
+            } else {
+              for (var i = this.plate.maxPostion; i > resp.ask.items.length; i--) {
+                var ask = { price: 0, amount: 0 };
+                ask.direction = "SELL";
+                ask.position = i;
+                ask.totalAmount = ask.amount;
+                this.plate.askRows.push(ask);
+              }
+              for (var i = resp.ask.items.length; i > 0; i--) {
+                var ask = resp.ask.items[i - 1];
+                ask.direction = "SELL";
+                ask.position = i;
+                this.plate.askRows.push(ask);
+              }
+              var askItemIndex = (resp.ask.items.length - 1) > 0 ? (resp.ask.items.length - 1) : 0;
+              const rows = this.plate.askRows,
+                len = rows.length,
+                totle =
+                  rows[askItemIndex]
+                    .totalAmount;
+              this.plate.askTotle = totle;
+            }
+          }
+          if (resp.bid && resp.bid.items) {
+            for (var i = 0; i < resp.bid.items.length; i++) {
+              if (i == 0)
+                resp.bid.items[i].totalAmount = resp.bid.items[i].amount;
+              else
+                resp.bid.items[i].totalAmount =
+                  resp.bid.items[i - 1].totalAmount + resp.bid.items[i].amount;
+            }
+            for (var i = 0; i < resp.bid.items.length; i++) {
+              var bid = resp.bid.items[i];
+              bid.direction = "BUY";
+              bid.position = i + 1;
+              this.plate.bidRows.push(bid);
+              if (i == this.plate.maxPostion - 1) break;
+            }
+            if (resp.bid.items.length < this.plate.maxPostion) {
+              for (
+                var i = resp.bid.items.length;
+                i < this.plate.maxPostion;
+                i++
+              ) {
+                var bid = { price: 0, amount: 0 };
+                bid.direction = "BUY";
+                bid.position = i + 1;
+                bid.totalAmount = 0;
+                this.plate.bidRows.push(bid);
+              }
+              var bidItemIndex = (resp.bid.items.length - 1) > 0 ? (resp.bid.items.length - 1) : 0;
+              const rows = this.plate.bidRows,
+                len = rows.length,
+                totle = rows[bidItemIndex].totalAmount;
+              this.plate.bidTotle = totle;
+            } else {
+              const rows = this.plate.bidRows,
+                len = rows.length,
+                totle = rows[len - 1].totalAmount;
+              this.plate.bidTotle = totle;
+            }
+          }
         })
+      
+      
     },
     subscribeTickersProxy(id) {
       return new Promise((resolve, reject) => {
