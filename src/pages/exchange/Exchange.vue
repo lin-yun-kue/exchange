@@ -1396,7 +1396,7 @@ export default {
       this.getCoinInfo();
       // this.startWebsock();
       this.getSymbol(); //包含 K线图、getFavor、startWebsock等
-      this.getPlateFull();
+      // this.getPlateFull();
       this.getTrade();
       // if (this.isLogin) {
       //   this.getWallet(); //账户资产信息
@@ -1958,6 +1958,7 @@ console.log( 'changeBaseCion',str, this.coins )
           this.plate.askRows = [];
           this.plate.bidRows = [];
           let resp = {
+            skin: "night",
             ask: {
               items: []
             },
@@ -1973,6 +1974,7 @@ console.log( 'changeBaseCion',str, this.coins )
               amount: ask.volume
             });
           }
+          resp.ask.items.reverse();
           for(var i = 0; i < result.bidPreOrders.length; i++){
             const bid = result.bidPreOrders[i];
             resp.bid.items.push({
@@ -2063,23 +2065,22 @@ console.log( 'changeBaseCion',str, this.coins )
               this.plate.bidTotle = totle;
             }
           }
-          // if(str!=""){
-          //   this.selectedPlate = str;
-          // }
+          this.$refs.depthGraph.draw(resp);
         })
     },
     getPlateFull() {
-      // //深度图
-      // var params = {};
-      // params["symbol"] = this.currentCoin.symbol;
-      // this.$http
-      //   .post(this.host + this.api.market.platefull, params)
-      //   .then(response => {
-      //     var resp = response.body;
-      //     this.fullTrade = resp;
-      //     resp.skin = this.skin;
-      //     this.$refs.depthGraph.draw(resp);
-      //   });
+      //深度图
+      var params = {};
+      params["symbol"] = this.currentCoin.symbol;
+      this.$http
+        .post(this.host + this.api.market.platefull, params)
+        .then(response => {
+          var resp = response.body;
+          debugger;
+          this.fullTrade = resp;
+          resp.skin = this.skin;
+          this.$refs.depthGraph.draw(resp);
+        });
     },
     updatePlate(type, row) {
       //发现该方法未被使用
@@ -2184,10 +2185,13 @@ console.log( 'changeBaseCion',str, this.coins )
           this.plate.askRows = [];
           this.plate.bidRows = [];
           let resp = {
+            skin: "night",
             ask: {
+              direction: "SELL",
               items: []
             },
             bid: {
+              direction:"BUY",
               items: []
             }
           };
@@ -2289,6 +2293,8 @@ console.log( 'changeBaseCion',str, this.coins )
               this.plate.bidTotle = totle;
             }
           }
+          resp.skin = this.skin;
+          this.$refs.depthGraph.draw(resp);
         })
       
       
