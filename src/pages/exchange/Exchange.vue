@@ -86,51 +86,71 @@
                 <span>成交/訂單量</span>
             </div>
             <div class="history_record"></div>
-            <div class="history_footer"></div>
+            <!-- <div class="history_footer"></div> -->
           </div>
           <div class="trading_container">
             <div class="trading_tab">
               <span>買入/賣出</span>
               <div class="tab_list">
-                  <span class="tab_item" :class="{active:tradingActiveTab=='limit'}">當前訂單</span>
-                  <span class="tab_item" :class="{active:tradingActiveTab=='market'}">歷史訂單</span>
+                  <span class="tab_item" :class="{active:orderType=='LimitPrice'}" @click="tradeTabChange('limit')">限價</span>
+                  <span class="tab_item" :class="{active:orderType=='MarketPrice'}" @click="tradeTabChange('market')">市價</span>
               </div>
-              
             </div>
             <div class="trading_main">
-                <div class="trading_buy"></div>
-                <div class="trading_sell"></div>
+                <div class="trading_buy">
+                  <div class="trading_row" v-show="orderType=='LimitPrice'">
+                    <input v-model.number="bidForm.price" @change="formChange('b', 'p')">
+                    <span class="title">限價</span>
+                    <span class="unit" v-text="currentCoin.base"></span>
+                  </div>
+                  <div class="trading_row" style="margin-bottom: 40px;">
+                    <input v-model.number="bidForm.unit" @change="formChange('b', 'u')">
+                    <span class="title">數量</span>
+                    <span class="unit" v-text="currentCoin.coin"></span>
+                  </div>
+                  <div class="trading_row">
+                    <span class="title">餘額</span>
+                    <span class="unit" v-text="wallet.base + currentCoin.base"></span>
+                  </div>
+                  <div class="trading_row">
+                    <input v-model.number="bidForm.total" @change="formChange('b', 't')">
+                    <span class="title">金額</span>
+                    <span class="unit" v-text="currentCoin.base"></span>
+                  </div>
+                </div>
+                  
+                <div class="trading_sell">
+                  <div class="trading_row" v-show="orderType=='LimitPrice'">
+                    <input v-model.number="askForm.price" @change="formChange('s', 'p')">
+                    <span class="title">限價</span>
+                    <span class="unit" v-text="currentCoin.base"></span>
+                  </div>
+                  <div class="trading_row" style="margin-bottom: 40px;">
+                    <input v-model.number="askForm.unit" @change="formChange('s', 'u')">
+                    <span class="title">數量</span>
+                    <span class="unit" v-text="currentCoin.coin"></span>
+                  </div>
+                  <div class="trading_row">
+                    <span class="title">餘額</span>
+                    <span class="unit" v-text="wallet.coin + currentCoin.coin"></span>
+                  </div>
+                  <div class="trading_row">
+                    <input v-model.number="askForm.total" @change="formChange('s', 't')">
+                    <span class="title">金額</span>
+                    <span class="unit" v-text="currentCoin.base"></span>
+                  </div>
+                </div>
             </div>
-            <div class="trading_footer">
-
-            </div>
+            <!-- <div class="trading_footer"></div> -->
           </div>
         </div>
       </div>
       <div class="left plate-wrap" style="position:relative;">
-        <div class="lightning-panel" v-if="showCountDown" :style="{backgroundColor:countDownBgColor}">
-          <img v-if="lang == '简体中文' && publishType=='FENTAN'" src="../../assets/images/lightning-bg.png"></img>
-          <img v-if="lang == 'English' && publishType=='FENTAN'" src="../../assets/images/lightning-bg-en.png"></img>
-          <img v-if="lang == '简体中文' && publishType=='QIANGGOU'" src="../../assets/images/lightning-bg2.png"></img>
-          <img v-if="lang == 'English' && publishType=='QIANGGOU'" src="../../assets/images/lightning-bg2-en.png"></img>
-        </div>
-        <!-- <div class="handlers">
-          <span @click="changePlate('all')" class="handler handler-all" :class="{active:selectedPlate=='all'}"></span>
-          <span @click="changePlate('buy')" class="handler handler-green" :class="{active:selectedPlate=='buy'}"></span>
-          <span @click="changePlate('sell')" class="handler handler-red" :class="{active:selectedPlate=='sell'}"></span>
-        </div> -->
         <Table v-show="selectedPlate!='buy'" @on-current-change="buyPlate" highlight-row ref="currentRowTable" class="sell_table" :columns="plate.columns" :data="plate.askRows" :no-data-text="$t('common.nodata')"></Table>
         <div class="plate-nowprice">
           <span class="price" :class="{buy:currentCoin.change>0,sell:currentCoin.change<0}">{{currentCoin.price | toFixed(baseCoinScale)}}</span>
-          <!-- <span v-if="currentCoin.change>0" class="buy">↑</span>
-          <span v-else-if="currentCoin.change<0" class="sell">↓</span>
-          <span class="price-cny"> ≈ {{currentCoin.usdRate*CNYRate | toFixed(2)}} CNY</span> -->
         </div>
         <Table v-show="selectedPlate!='sell'" @on-current-change="sellPlate" highlight-row class="buy_table" :class="{hidden:selectedPlate==='all'}" :columns="plate.columns" :data="plate.bidRows" :no-data-text="$t('common.nodata')"></Table>
-        <!-- <div class="trade-wrap" style="margin-top: 10px;" v-show="!showCountDown">
-          <Table height="264" :columns="trade.columns" :data="trade.rows" :no-data-text="$t('common.nodata')"></Table>
-        </div> -->
-
       </div>
     </div>
   </div>
@@ -377,13 +397,31 @@ $night-color: #fff;
             justify-content: space-between;
             height: 295px;
             margin-bottom: 5px;
-            .trading_buy {
+            .trading_buy, .trading_sell {
               background-color: #192330;
               flex: 0 0 49%;
-            }
-            .trading_sell {
-              background-color: #192330;
-              flex: 0 0 49%;
+              padding: 10px 5px;
+              .trading_row {
+                display: flex;
+                position: relative;
+                width: 95%;
+                margin: 0 auto 20px auto;
+                .title {
+                  position: absolute;
+                  left: 5px;
+                }
+                input {
+                  background-color: unset;
+                  width: 100%;
+                  padding-left: 35px;
+                  border: 1px solid #AAAAAA;
+                  color: white;
+                }
+                .unit {
+                  position: absolute;
+                  right: 5px;
+                }
+              }
             }
           }
           .trading_footer {
@@ -633,18 +671,16 @@ export default {
       dataIndex: [],
       dataIndex2: [],
       searchKey: "",
-      coinInfo:{
-
-      },
+      coinInfo:{},
       currentCoin: {
         base: "",
         coin: "",
-        symbol: ""
+        symbol: "",
+        price: 0
       },
       enableMarketBuy: 1, // 0:禁用  1:启用
       enableMarketSell: 1,
       exchangeable: 1, // 0:可交易   1:不可交易
-
       publishType: "NONE",
       currentTime: 0,
       publishAmount: 0,
@@ -880,20 +916,20 @@ export default {
       fixHistoryHeight: 295,
       // rechargeUrl:'#/finance/recharge',
       // rechargeUSDTUrl:'#/finance/recharge?name=USDT',
-      form: {
-        buy: {
-          limitPrice: 0.0,
-          limitAmount: 0.0,
-          marketAmount: 0.0,
-          limitTurnover: 0.0
-        },
-        sell: {
-          limitPrice: 0.0,
-          limitAmount: 0.0,
-          marketAmount: 0.0,
-          limitTurnover: 0.0
-        }
-      },
+      // form: {
+      //   buy: {
+      //     limitPrice: 0.0,
+      //     limitAmount: 0.0,
+      //     marketAmount: 0.0,
+      //     limitTurnover: 0.0
+      //   },
+      //   sell: {
+      //     limitPrice: 0.0,
+      //     limitAmount: 0.0,
+      //     marketAmount: 0.0,
+      //     limitTurnover: 0.0
+      //   }
+      // },
       trade: {
         rows: [],
         columns: [
@@ -1195,7 +1231,20 @@ export default {
       proxy: null,
       sideCountryID: "COIN",
       pairID: null,
-      currentHref: "btc_usdt"
+      currentHref: "btc_usdt",
+      orderType: "LimitPrice",
+      bidForm: {
+        transType: "bid",
+        price: 0,
+        unit: 0,
+        total: 0
+      },
+      askForm: {
+        transType: "ask",
+        price: 0,
+        unit: 0,
+        total: 0
+      }
     };
   },
   filters: {
@@ -1398,11 +1447,11 @@ export default {
       this.getSymbol(); //包含 K线图、getFavor、startWebsock等
       // this.getPlateFull();
       this.getTrade();
-      // if (this.isLogin) {
-      //   this.getWallet(); //账户资产信息
-      //   this.getCurrentOrder(); //当前委托
-      //   this.getHistoryOrder(); //历史委托
-      // }
+      if (this.isLogin) {
+        this.getWallet(); //账户资产信息
+        this.getCurrentOrder(); //当前委托
+        this.getHistoryOrder(); //历史委托
+      }
       this.sliderBuyLimitPercent = 0;
       this.sliderSellLimitPercent = 0;
       this.sliderBuyMarketPercent = 0;
@@ -1822,67 +1871,70 @@ console.log( 'changeBaseCion',str, this.coins )
           var targetData = [...cryptos, ...flatMoney];
 
           for(var i = 0; i < targetData.length; i++){
-          var record = targetData[i];
-          for(var j = 0; j < record.pairs.length; j++){
-            var pair = record.pairs[j];
-            resp.push({
-              "symbol": pair.toCoinName + '/' + record.fromCoinName,
-              "open":0,
-              "high":0,
-              "low":0,
-              "close":0,
-              "chg":0,
-              "change":0,
-              "volume":0,
-              "turnover":0,
-              "lastDayClose":0,
-              "usdRate":0,
-              "baseUsdRate":0,
-              "zone":0,
-              "pairID": pair.pairID
-            })
+            var record = targetData[i];
+            for(var j = 0; j < record.pairs.length; j++){
+              var pair = record.pairs[j];
+              resp.push({
+                "symbol": pair.toCoinName + '/' + record.fromCoinName,
+                "open":0,
+                "high":0,
+                "low":0,
+                "close":0,
+                "chg":0,
+                "change":0,
+                "volume":0,
+                "turnover":0,
+                "lastDayClose":0,
+                "usdRate":0,
+                "baseUsdRate":0,
+                "zone":0,
+                "pairID": pair.pairID,
+                "minAmt": pair.minAmt,
+                "minPrice": pair.minPrice,
+                "minDeal": pair.minDeal
+              })
+            }
           }
-        }
 
-        //先清空已有数据
-        for (var i = 0; i < resp.length; i++) {
-          var coin = resp[i];
-          coin.base = resp[i].symbol.split("/")[1];
-          this.coins[coin.base] = [];
-          this.coins[coin.base + "2"] = [];
-          this.coins._map = [];
-          this.coins.favor = [];
-        }
-        for (var i = 0; i < resp.length; i++) {
-          var coin = resp[i];
-          coin.price = resp[i].close = resp[i].close.toFixed(
+          //先清空已有数据
+          for (var i = 0; i < resp.length; i++) {
+            var coin = resp[i];
+            coin.base = resp[i].symbol.split("/")[1];
+            this.coins[coin.base] = [];
+            this.coins[coin.base + "2"] = [];
+            this.coins._map = [];
+            this.coins.favor = [];
+          }
+          for (var i = 0; i < resp.length; i++) {
+            var coin = resp[i];
+            coin.price = resp[i].close = resp[i].close.toFixed(
             this.baseCoinScale
           );
-          coin.rose =
-            resp[i].chg > 0
-              ? "+" + (resp[i].chg * 100).toFixed(2) + "%"
-              : (resp[i].chg * 100).toFixed(2) + "%";
-          coin.coin = resp[i].symbol.split("/")[0];
-          coin.base = resp[i].symbol.split("/")[1];
-          coin.href = (coin.coin + "_" + coin.base).toLowerCase();
-          coin.isFavor = false;
-          this.coins._map[coin.symbol] = coin;
-          if(coin.zone == 0){
-            this.coins[coin.base].push(coin);
-          }else{
-            this.coins[coin.base + "2"].push(coin);
+            coin.rose =
+              resp[i].chg > 0
+                ? "+" + (resp[i].chg * 100).toFixed(2) + "%"
+                : (resp[i].chg * 100).toFixed(2) + "%";
+            coin.coin = resp[i].symbol.split("/")[0];
+            coin.base = resp[i].symbol.split("/")[1];
+            coin.href = (coin.coin + "_" + coin.base).toLowerCase();
+            coin.isFavor = false;
+            this.coins._map[coin.symbol] = coin;
+            if(coin.zone == 0){
+              this.coins[coin.base].push(coin);
+            }else{
+              this.coins[coin.base + "2"].push(coin);
+            }
+            if (coin.symbol == this.currentCoin.symbol) {
+              this.currentCoin = coin;
+              // this.form.buy.limitPrice = this.form.sell.limitPrice = coin.price;
+            }
           }
-          if (coin.symbol == this.currentCoin.symbol) {
-            this.currentCoin = coin;
-            this.form.buy.limitPrice = this.form.sell.limitPrice = coin.price;
-          }
-        }
-        console.log("getSymbol", this.coins);
-        require(["../../assets/js/exchange.js"], function(e) {
-          e.clickScTab();
-        });
+          console.log("getSymbol", this.coins);
+          require(["../../assets/js/exchange.js"], function(e) {
+            e.clickScTab();
+          });
 
-        this.startWebsock();
+          this.startWebsock();
       })
     },
     getCoinInfo(){
@@ -1955,6 +2007,11 @@ console.log( 'changeBaseCion',str, this.coins )
       this.subscribeOrderProxy(record.pairID)
         .then(result => {
           console.log("getPlate", result);
+
+          this.currentCoin.price = result.unitPrice;
+          this.bidForm.price = result.unitPrice;
+          this.askForm.price = result.unitPrice;
+
           this.plate.askRows = [];
           this.plate.bidRows = [];
           let resp = {
@@ -2674,7 +2731,7 @@ console.log( 'changeBaseCion',str, this.coins )
     /**
      * 
      */
-    getWallet() {
+    getWallet() { 
       this.$http
         .post(this.host + this.api.uc.wallet + this.currentCoin.base, {})
         .then(response => {
@@ -2834,6 +2891,38 @@ console.log( 'changeBaseCion',str, this.coins )
     },
     setPublishProgress(){
 
+    },
+    tradeTabChange(type){
+      if(type == "limit"){
+        this.orderType = "LimitPrice";
+      }else{
+        this.orderType = "MarketPrice";
+      }
+    },
+    formChange(type, column){
+      debugger;
+      if(type == "b"){
+        switch(column){
+          case 'p':
+          case 'u':
+            this.bidForm.total = this.bidForm.price * this.bidForm.unit;
+            break;
+          case 't':
+            this.bidForm.unit = this.bidForm.total / this.bidForm.price; 
+            break;
+        }
+      }
+      if(type=="s"){
+        switch(column){
+          case 'p':
+          case 'u':
+            this.askForm.total = this.askForm.price * this.askForm.unit;
+            break;
+          case 't':
+            this.askForm.unit = this.askForm.total / this.askForm.price; 
+            break;
+        }
+      }
     }
   }
 };
