@@ -2582,7 +2582,6 @@ export default {
         .fail((err) => console.log("get base amount fail"));
     },
     getCurrentOrder() {
-      debugger;
       const pageNow = 1;
       const pageSize = 1000;
       const url = this.isHideOther
