@@ -2791,6 +2791,7 @@ export default {
           } else {
             alert("訂單建立成功");
             this.getCurrentOrder();
+            this.getWallet();
           }
         })
         .fail((err) => {
