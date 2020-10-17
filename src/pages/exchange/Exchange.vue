@@ -21,21 +21,10 @@
       </div>
       <div class="center">
         <div class="symbol">
-          <div class="item" @click="currentCoinFavorChange">
-            <!-- <Icon v-if="currentCoinIsFavor" type="ios-star" color="#f0a70a" size="24" />
-            <Icon v-else type="ios-star-outline" color="#f0a70a" size="24" /> -->
-          </div>
-          <div class="item" style="margin-left: -40px;">
+          <div class="item">
               <span class="coin">{{currentCoin.coin}}
                 <small>/{{currentCoin.base}}</small>
               </span>
-            <!-- <Poptip trigger="hover" :title="coinInfo.name" content="content"  placement="bottom-start" word-wrap width="300">
-              <Icon type="md-information-circle" style="color:#546886;margin-left:5px;"/>
-              <div class="api" slot="content">
-                  <div class="coin-info">{{coinInfo.information}}</div>
-                  <p style="text-align:right;margin-top: -10px;"><a :href="coinInfo.infolink" target="_blank">{{$t("exchange.moredetail")}}</a></p>
-              </div>
-            </Poptip> -->
           </div>
           <div class="item">
             <span class="text">{{$t('service.NewPrice')}}</span>
@@ -76,17 +65,58 @@
             <div class="history_tab">
               <span>我的訂單</span>
               <div class="tab_list">
-                  <span class="tab_item" :class="{active:historyActiveTab=='cur'}">當前訂單</span>
-                  <span class="tab_item" :class="{active:historyActiveTab=='his'}">歷史訂單</span>
+                  <span class="tab_item" :class="{active:historyActiveTab=='cur'}" @click="myOrderChange('cur')">當前訂單</span>
+                  <span class="tab_item" :class="{active:historyActiveTab=='his'}" @click="myOrderChange('his')">歷史訂單</span>
               </div>
             </div>
             <div class="history_title">
                 <span>市場/建立時間</span>
-                <span>類別/價格</span>
-                <span>成交/訂單量</span>
+                <span class="mid">類別/價格</span>
+                <span :class="historyActiveTab == 'cur' ? 'last' : 'last his'">成交/訂單量</span>
             </div>
-            <div class="history_record"></div>
-            <!-- <div class="history_footer"></div> -->
+            <div v-if="historyActiveTab == 'cur'" class="history_record">
+              <div v-for="(item, index) in currentOrder" class="record_row" :key="index">
+                  <div class="record_info">
+                    <div class="row_c1">
+                      <span>{{ item.pairName }}</span>
+                      <span>{{ item.createDate }}</span>
+                    </div>
+                    <div :class="item.transType == 'bid'? 'row_c2 buy' : 'row_c2 sell'">
+                      <span>{{ item.transType == "bid" ? "買入" : "賣出" }}</span>
+                      <span>{{ item.unitPrice }}</span>
+                    </div>
+                    <div class="row_c3">
+                      <span>{{ item.filledAmount }}</span>
+                      <span>{{ item.totalAmount }}</span>
+                    </div>
+                  </div>
+                  <div class="cancel_btn" @click="cancel(index)">
+                    <span >X</span>
+                  </div>
+              </div>
+            </div>
+            <div v-if="historyActiveTab == 'his'" class="history_record">
+              <div v-for="(item, index) in historyOrder" class="record_row" :key="index">
+                  <div class="record_info">
+                    <div class="row_c1">
+                      <span>{{ item.pairName }}</span>
+                      <span>{{ item.createDate }}</span>
+                    </div>
+                    <div :class="item.transType == 'bid'? 'row_c2 buy' : 'row_c2 sell'">
+                      <span>{{ item.transType == "bid" ? "買入" : "賣出" }}</span>
+                      <span>{{ item.unitPrice }}</span>
+                    </div>
+                    <div class="row_c3">
+                      <span>{{ item.filledAmount }}</span>
+                      <span>{{ item.totalAmount }}</span>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <div class="history_footer">
+              <input  @change="getCurrentOrder()" type="checkbox" id="hide_other" v-model="isHideOther">
+              <label for="hide_other">隱藏其他交易對</label>
+            </div>
           </div>
           <div class="trading_container">
             <div class="trading_tab">
@@ -117,6 +147,9 @@
                     <span class="title">金額</span>
                     <span class="unit" v-text="currentCoin.base"></span>
                   </div>
+                  <div class="trading_btn" @click="createOrder('b')">
+                    <span>買入</span>
+                  </div>
                 </div>
                   
                 <div class="trading_sell">
@@ -139,9 +172,14 @@
                     <span class="title">金額</span>
                     <span class="unit" v-text="currentCoin.base"></span>
                   </div>
+                  <div class="trading_btn" @click="createOrder('s')">
+                    <span>賣出</span>
+                  </div>
                 </div>
             </div>
-            <!-- <div class="trading_footer"></div> -->
+            <!-- <div class="trading_footer">
+              
+            </div> -->
           </div>
         </div>
       </div>
@@ -153,7 +191,7 @@
         <Table v-show="selectedPlate!='sell'" @on-current-change="sellPlate" highlight-row class="buy_table" :class="{hidden:selectedPlate==='all'}" :columns="plate.columns" :data="plate.bidRows" :no-data-text="$t('common.nodata')"></Table>
       </div>
     </div>
-  </div>
+    </div>
 </template>
 <style scoped lang="scss">
 @import url(../../assets/css/exchange.css);
@@ -166,7 +204,7 @@ $night-color: #fff;
   color: #fff;
   background-color: #0b1520;
   .main {
-    width:99%;
+    width: 99%;
     margin-left: 0.5%;
     display: flex;
     margin-top: 5px;
@@ -270,7 +308,7 @@ $night-color: #fff;
             padding: 11px 20px;
             cursor: pointer;
             &.active {
-              color: #FFF;
+              color: #fff;
               border-bottom: 2px solid #f0a70a;
             }
             &:first-child {
@@ -335,7 +373,7 @@ $night-color: #fff;
         justify-content: space-between;
         font-size: 12px;
         .history_container {
-          flex: 0 0  57%;
+          flex: 0 0 57%;
           .history_tab {
             background-color: #192330;
             padding: 0 9px;
@@ -347,9 +385,10 @@ $night-color: #fff;
               display: flex;
               .tab_item {
                 margin-left: 5px;
+                cursor: pointer;
               }
               .active {
-                border-bottom: 2px solid #FFA800;
+                border-bottom: 2px solid #ffa800;
               }
             }
           }
@@ -361,11 +400,75 @@ $night-color: #fff;
             height: 33px;
             justify-content: space-between;
             margin-bottom: 5px;
+            .last {
+              margin-right: 20px;
+              text-align: right;
+            }
+            .last.his {
+              margin-right: unset;
+            }
+            .mid {
+              text-align: center;
+            }
+            span {
+              flex: 1 1 33%;
+            }
           }
           .history_record {
             background-color: #192330;
             margin-bottom: 5px;
             height: 260px;
+            overflow-y: auto;
+            .record_row {
+              display: flex;
+              justify-content: space-between;
+              padding: 0 9px;
+              margin-bottom: 5px;
+              .record_info {
+                display: flex;
+                flex-grow: 1;
+                flex-shrink: 0;
+                justify-content: space-between;
+                .row_c1,
+                .row_c2,
+                .row_c3 {
+                  flex: 1 1 33%;
+                  display: flex;
+                  flex-direction: column;
+                  span {
+                    flex-basis: 50%;
+                  }
+                }
+                .row_c2 span {
+                  text-align: center;
+                }
+                .row_c3 span {
+                  text-align: right;
+                }
+              }
+              .cancel_btn {
+                flex: 0 0 20px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                span {
+                  flex-basis: unset;
+                  border-radius: 50%;
+                  background-color: grey;
+                  color: white;
+                  display: block;
+                  width: 20px;
+                  height: 20px;
+                  text-align: center;
+                }
+              }
+              .row_c2.buy {
+                color: rgb(74, 156, 83);
+              }
+              .row_c2.sell {
+                color: rgb(207, 78, 79);
+              }
+            }
           }
           .history_footer {
             background-color: #192330;
@@ -386,18 +489,20 @@ $night-color: #fff;
               display: flex;
               .tab_item {
                 margin-left: 5px;
+                cursor: pointer;
               }
               .active {
-                border-bottom: 2px solid #FFA800;
+                border-bottom: 2px solid #ffa800;
               }
             }
           }
-          .trading_main{
+          .trading_main {
             display: flex;
             justify-content: space-between;
             height: 295px;
             margin-bottom: 5px;
-            .trading_buy, .trading_sell {
+            .trading_buy,
+            .trading_sell {
               background-color: #192330;
               flex: 0 0 49%;
               padding: 10px 5px;
@@ -406,6 +511,7 @@ $night-color: #fff;
                 position: relative;
                 width: 95%;
                 margin: 0 auto 20px auto;
+                color: white;
                 .title {
                   position: absolute;
                   left: 5px;
@@ -414,13 +520,35 @@ $night-color: #fff;
                   background-color: unset;
                   width: 100%;
                   padding-left: 35px;
-                  border: 1px solid #AAAAAA;
-                  color: white;
+                  border: 1px solid #aaaaaa;
                 }
                 .unit {
                   position: absolute;
                   right: 5px;
                 }
+              }
+              .trading_btn {
+                text-align: center;
+              }
+            }
+            .trading_buy {
+              .trading_row {
+                input {
+                  color: rgb(74, 156, 83);
+                }
+              }
+              .trading_btn {
+                background-color: rgb(74, 156, 83);
+              }
+            }
+            .trading_sell {
+              .trading_row {
+                input {
+                  color: rgb(207, 78, 79);
+                }
+              }
+              .trading_btn {
+                background-color: rgb(207, 78, 79);
               }
             }
           }
@@ -428,7 +556,6 @@ $night-color: #fff;
             line-height: 33px;
             height: 33px;
             background-color: #192330;
-
           }
         }
       }
@@ -618,11 +745,11 @@ $night-color: #fff;
     }
   }
 }
-#kline_container{
-    background: #192330;
+#kline_container {
+  background: #192330;
 }
 
-.coin-info{
+.coin-info {
   color: #8f9ca5;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -632,18 +759,16 @@ $night-color: #fff;
 }
 </style>
 <script>
-
 import Datafeeds from "@js/charting_library/datafeed/bitrade.js";
 var Stomp = require("stompjs");
 var SockJS = require("sockjs-client");
 var moment = require("moment");
 import DepthGraph from "@components/exchange/DepthGraph.vue";
 // import $ from "@js/jquery.min.js";
-import 'signalr'
-
+import "signalr";
 
 export default {
-  components: { DepthGraph},
+  components: { DepthGraph },
   data() {
     let self = this;
     return {
@@ -671,12 +796,12 @@ export default {
       dataIndex: [],
       dataIndex2: [],
       searchKey: "",
-      coinInfo:{},
+      coinInfo: {},
       currentCoin: {
         base: "",
         coin: "",
         symbol: "",
-        price: 0
+        price: 0,
       },
       enableMarketBuy: 1, // 0:禁用  1:启用
       enableMarketSell: 1,
@@ -704,9 +829,7 @@ export default {
               h("Icon", {
                 props: {
                   // color:"red",
-                  type: params.row.isFavor
-                    ? "ios-star"
-                    : "ios-star-outline"
+                  type: params.row.isFavor ? "ios-star" : "ios-star-outline",
                 },
                 nativeOn: {
                   click: () => {
@@ -727,18 +850,18 @@ export default {
                     } else {
                       this.$Message.warning("请先登录");
                     }
-                  }
-                }
+                  },
+                },
               }),
-              h("span", params.row.symbol)
+              h("span", params.row.symbol),
             ]);
-          }
+          },
         },
         {
           title: this.$t("exchange.lastprice"),
           key: "close",
           sortable: true,
-          sortMethod: function(a, b, type) {
+          sortMethod: function (a, b, type) {
             let a1 = parseFloat(a);
             let b1 = parseFloat(b);
             if (type == "asc") {
@@ -746,13 +869,13 @@ export default {
             } else {
               return b1 - a1;
             }
-          }
+          },
         },
         {
           title: this.$t("exchange.daychange"),
           key: "rose",
           sortable: true,
-          sortMethod: function(a, b, type) {
+          sortMethod: function (a, b, type) {
             let a1 = a.replace(/[^\d|.|-]/g, "") - 0;
             let b1 = b.replace(/[^\d|.|-]/g, "") - 0;
             if (type == "asc") {
@@ -768,13 +891,13 @@ export default {
               "span",
               {
                 attrs: {
-                  class: className
-                }
+                  class: className,
+                },
               },
               row.rose
             );
-          }
-        }
+          },
+        },
       ],
       //当前市场上的交易币种，按交易对分
       coins: {
@@ -794,14 +917,14 @@ export default {
             width: 110,
             className: "coin-menu-symbol",
             render: (h, params) => {
-              if(params.row.coin == "BZB"){
+              if (params.row.coin == "BZB") {
                 return h("div", [
                   h("Icon", {
                     props: {
                       // color:"red",
                       type: params.row.isFavor
                         ? "ios-star"
-                        : "ios-star-outline"
+                        : "ios-star-outline",
                     },
                     nativeOn: {
                       click: () => {
@@ -822,22 +945,31 @@ export default {
                         } else {
                           this.$Message.warning("请先登录");
                         }
-                      }
-                    }
+                      },
+                    },
                   }),
                   h("span", params.row.coin),
-                  h("span", {
-                    style: {fontSize: "8px", padding: "2px 5px 1px 5px", color: "#FFF", marginLeft: "5px", background:"#F30", borderRadius:"4px"}
-                  }, "HOT")
+                  h(
+                    "span",
+                    {
+                      style: {
+                        fontSize: "8px",
+                        padding: "2px 5px 1px 5px",
+                        color: "#FFF",
+                        marginLeft: "5px",
+                        background: "#F30",
+                        borderRadius: "4px",
+                      },
+                    },
+                    "HOT"
+                  ),
                 ]);
               }
               return h("div", [
                 h("Icon", {
                   props: {
                     // color:"red",
-                    type: params.row.isFavor
-                      ? "ios-star"
-                      : "ios-star-outline"
+                    type: params.row.isFavor ? "ios-star" : "ios-star-outline",
                   },
                   nativeOn: {
                     click: () => {
@@ -858,18 +990,18 @@ export default {
                       } else {
                         this.$Message.warning("请先登录");
                       }
-                    }
-                  }
+                    },
+                  },
                 }),
-                h("span", params.row.coin)
+                h("span", params.row.coin),
               ]);
-            }
+            },
           },
           {
             title: this.$t("exchange.lastprice"),
             key: "close",
             sortable: true,
-            sortMethod: function(a, b, type) {
+            sortMethod: function (a, b, type) {
               let a1 = parseFloat(a);
               let b1 = parseFloat(b);
               if (type == "asc") {
@@ -877,13 +1009,13 @@ export default {
               } else {
                 return b1 - a1;
               }
-            }
+            },
           },
           {
             title: this.$t("exchange.daychange"),
             key: "rose",
             sortable: true,
-            sortMethod: function(a, b, type) {
+            sortMethod: function (a, b, type) {
               let a1 = a.replace(/[^\d|.|-]/g, "") - 0;
               let b1 = b.replace(/[^\d|.|-]/g, "") - 0;
               if (type == "asc") {
@@ -899,18 +1031,18 @@ export default {
                 "span",
                 {
                   attrs: {
-                    class: className
-                  }
+                    class: className,
+                  },
                 },
                 row.rose
               );
-            }
-          }
-        ]
+            },
+          },
+        ],
       },
       wallet: {
         base: 0.0,
-        coin: 0.0
+        coin: 0.0,
       },
       showMarket: false,
       fixHistoryHeight: 295,
@@ -944,8 +1076,8 @@ export default {
                 "span",
                 {
                   attrs: {
-                    class: className
-                  }
+                    class: className,
+                  },
                 },
                 params.row.price.toFixed(this.baseCoinScale)
               );
@@ -954,7 +1086,7 @@ export default {
               const title =
                 self.$t("exchange.price") + "(" + self.currentCoin.base + ")";
               return h("span", {}, title);
-            }
+            },
           },
           {
             title: self.$t("exchange.num"),
@@ -966,16 +1098,16 @@ export default {
               const title =
                 self.$t("exchange.num") + "(" + self.currentCoin.coin + ")";
               return h("span", {}, title);
-            }
+            },
           },
           {
             title: self.$t("exchange.time"),
             key: "time",
             render: (h, params) => {
               return h("span", {}, this.timeFormat(params.row.time));
-            }
-          }
-        ]
+            },
+          },
+        ],
       },
       //   最新价的 table 数据;
       plate: {
@@ -1019,8 +1151,8 @@ export default {
                   "span",
                   {
                     attrs: {
-                      class: className
-                    }
+                      class: className,
+                    },
                   },
                   price
                 ));
@@ -1030,7 +1162,7 @@ export default {
               const title =
                 self.$t("exchange.price") + "(" + self.currentCoin.base + ")";
               return h("span", {}, title);
-            }
+            },
           },
           {
             title: self.$t("exchange.num"),
@@ -1050,7 +1182,7 @@ export default {
               const title =
                 self.$t("exchange.num") + "(" + self.currentCoin.coin + ")";
               return h("span", {}, title);
-            }
+            },
           },
           {
             title: self.$t("exchange.total"),
@@ -1070,7 +1202,7 @@ export default {
               const title =
                 self.$t("exchange.total") + "(" + self.currentCoin.coin + ")";
               return h("span", {}, title);
-            }
+            },
           },
           {
             className: "percenttd",
@@ -1091,139 +1223,22 @@ export default {
                 {
                   style: {
                     width,
-                    backgroundColor
+                    backgroundColor,
                   },
                   attrs: {
-                    class: "percentdiv"
-                  }
+                    class: "percentdiv",
+                  },
                 },
                 " "
               );
-            }
-          }
+            },
+          },
         ],
         askRows: [],
-        bidRows: []
+        bidRows: [],
       },
-      currentOrder: {
-      },
-      historyOrder: {
-        pageSize: 10,
-        total: 10,
-        page: 0,
-        columns: [
-          {
-            type: "index",
-            width: 40,
-            render: (h, params) => {
-              return h(expandRow, {
-                props: {
-                  skin: params.row.skin,
-                  rows: params.row.detail
-                }
-              });
-            }
-          },
-          {
-            title: self.$t("exchange.time"),
-            key: "time",
-            render: (h, params) => {
-              return h("span", {}, this.dateFormat(params.row.time));
-            }
-          },
-          {
-            title: self.$t("exchange.symbol"),
-            key: "symbol"
-          },
-          {
-            title: self.$t("exchange.type"),
-            render(h, params) {
-              return h(
-                "span",
-                params.row.type === "LIMIT_PRICE" ? "限价" : "市价"
-              );
-            }
-          },
-          {
-            title: self.$t("exchange.direction"),
-            key: "direction",
-            render: (h, params) => {
-              const row = params.row;
-              const className = row.direction.toLowerCase();
-              return h(
-                "span",
-                {
-                  attrs: {
-                    class: className
-                  }
-                },
-                row.direction == "BUY"
-                  ? self.$t("exchange.buyin")
-                  : self.$t("exchange.sellout")
-              );
-            }
-          },
-          {
-            title: self.$t("exchange.price"),
-            key: "price",
-            render(h, params) {
-              return h("span", self.toFloor(params.row.price));
-            }
-          },
-          {
-            title: self.$t("exchange.num"),
-            key: "amount",
-            render(h, params) {
-              return h("span", self.toFloor(params.row.amount));
-            }
-          },
-          {
-            title: self.$t("exchange.done"),
-            key: "tradedAmount",
-            render(h, params) {
-              return h("span", self.toFloor(params.row.tradedAmount));
-            }
-          },
-          {
-            title: self.$t("exchange.dealamount"),
-            key: "turnover",
-            render(h, params) {
-              return h("span", self.toFloor(params.row.turnover));
-            }
-          },
-          {
-            title: self.$t("exchange.status"),
-            key: "status",
-            render: (h, params) => {
-              const status = params.row.status;
-              if (status == "COMPLETED") {
-                return h(
-                  "span",
-                  {
-                    style: {
-                      color: "#f0a70a"
-                    }
-                  },
-                  self.$t("exchange.finished")
-                );
-              } else if (status == "CANCELED") {
-                return h(
-                  "span",
-                  {
-                    style: {
-                      color: "#7c7f82"
-                    }
-                  },
-                  self.$t("exchange.canceled")
-                );
-              } else {
-                return h("span", {}, "--");
-              }
-            }
-          }
-        ],
-        rows: []
-      },
+      currentOrder: [],
+      historyOrder: [],
       fullTrade: {},
       historyActiveTab: "cur",
       tradingActiveTab: "limit",
@@ -1237,78 +1252,79 @@ export default {
         transType: "bid",
         price: 0,
         unit: 0,
-        total: 0
+        total: 0,
       },
       askForm: {
         transType: "ask",
         price: 0,
         unit: 0,
-        total: 0
-      }
+        total: 0,
+      },
+      isHideOther: false,
     };
   },
   filters: {
-      toFixedPublishAmount: function (value) {
-          var tem = value.toFixed(7);
-          if(value >= 10){
-            tem = value.toFixed(6);
-          }
-          if(value >= 100){
-            tem = value.toFixed(5);
-          }
-          if(value >= 1000){
-            tem = value.toFixed(4);
-          }
-          if(value >= 10000){
-            tem = value.toFixed(3);
-          }
-          if(value >= 100000){
-            tem = value.toFixed(2);
-          }
-          if(value >= 1000000){
-            tem = value.toFixed(1);
-          }
-          if(value >= 10000000){
-            tem = value.toFixed(0);
-          }
-          return tem;
-      },
-      toFixedPublishPrice: function (value) {
-          var tem = value.toFixed(5).replace(/0+$/g,"");
-          if(value >= 1){
-            tem = value.toFixed(4);
-          }
-          if(value >= 10){
-            tem = value.toFixed(3);
-          }
-          if(value >= 100){
-            tem = value.toFixed(2);
-          }
-          if(value >= 1000){
-            tem = value.toFixed(1);
-          }
-          if(value >= 10000){
-            tem = value.toFixed(1);
-          }
-          return tem;
+    toFixedPublishAmount: function (value) {
+      var tem = value.toFixed(7);
+      if (value >= 10) {
+        tem = value.toFixed(6);
       }
+      if (value >= 100) {
+        tem = value.toFixed(5);
+      }
+      if (value >= 1000) {
+        tem = value.toFixed(4);
+      }
+      if (value >= 10000) {
+        tem = value.toFixed(3);
+      }
+      if (value >= 100000) {
+        tem = value.toFixed(2);
+      }
+      if (value >= 1000000) {
+        tem = value.toFixed(1);
+      }
+      if (value >= 10000000) {
+        tem = value.toFixed(0);
+      }
+      return tem;
+    },
+    toFixedPublishPrice: function (value) {
+      var tem = value.toFixed(5).replace(/0+$/g, "");
+      if (value >= 1) {
+        tem = value.toFixed(4);
+      }
+      if (value >= 10) {
+        tem = value.toFixed(3);
+      }
+      if (value >= 100) {
+        tem = value.toFixed(2);
+      }
+      if (value >= 1000) {
+        tem = value.toFixed(1);
+      }
+      if (value >= 10000) {
+        tem = value.toFixed(1);
+      }
+      return tem;
+    },
   },
   computed: {
-    rechargeUSDTUrl: function() {
-      return "/uc/recharge?name="+this.currentCoin.base;
+    rechargeUSDTUrl: function () {
+      return "/uc/recharge?name=" + this.currentCoin.base;
       // return "#/finance/recharge?name=" + this.currentCoin.base;
     },
-    rechargeCoinUrl: function() {
+    rechargeCoinUrl: function () {
       return "/uc/recharge?name=" + this.currentCoin.coin;
       // return "#/finance/recharge?name=" + this.currentCoin.coin;
     },
-    isLogin: function() {
+    isLogin: function () {
       return this.$store.getters.isLogin;
     },
-    member: function() {
+    member: function () {
       return this.$store.getters.member;
     },
-    lang: function() {
+    lang: function () {
       return this.$store.state.lang;
     },
     sliderBuyDisabled() {
@@ -1320,19 +1336,16 @@ export default {
       let account = this.wallet.coin,
         min = this.toFloor(1 / Math.pow(10, this.coinScale));
       return account < min;
-    }
+    },
   },
   watch: {
-    "form.buy.limitPrice": function(val) {
+    "form.buy.limitPrice": function (val) {
       let price = this.form.buy.limitPrice,
         account = this.wallet.base,
         amount = 0;
       if (val > 0) {
         amount = this.toFloor(
-          account
-            .div(price)
-            .mul(this.sliderBuyLimitPercent)
-            .mul(0.01),
+          account.div(price).mul(this.sliderBuyLimitPercent).mul(0.01),
           this.coinScale
         );
       }
@@ -1342,25 +1355,25 @@ export default {
         this.baseCoinScale
       );
     },
-    "form.buy.limitAmount": function(val) {
+    "form.buy.limitAmount": function (val) {
       this.form.buy.limitTurnover = this.toFloor(
         val.mul(this.form.buy.limitPrice),
         this.baseCoinScale
       );
     },
-    "form.sell.limitPrice": function(val) {
+    "form.sell.limitPrice": function (val) {
       this.form.sell.limitTurnover = this.toFloor(
         val.mul(this.form.sell.limitAmount),
         this.coinScale
       );
     },
-    "form.sell.limitAmount": function(val) {
+    "form.sell.limitAmount": function (val) {
       this.form.sell.limitTurnover = this.toFloor(
         val.mul(this.form.sell.limitPrice),
         this.coinScale
       );
     },
-    lang: function() {
+    lang: function () {
       this.updateLangData();
     },
     $route(to, from) {
@@ -1372,10 +1385,7 @@ export default {
         amount = 0;
       if (price > 0) {
         amount = this.toFloor(
-          account
-            .div(price)
-            .mul(this.sliderBuyLimitPercent)
-            .mul(0.01),
+          account.div(price).mul(this.sliderBuyLimitPercent).mul(0.01),
           this.coinScale
         );
       }
@@ -1401,23 +1411,29 @@ export default {
         account.mul(this.sliderSellMarketPercent).mul(0.01),
         this.coinScale
       );
-    }
+    },
   },
-  created: function() {
+  created: function () {
     this.init();
   },
   methods: {
-    seachInputChange(){
+    seachInputChange() {
       this.searchKey = this.searchKey.toUpperCase();
       // if(this.basecion == "favor"){
       //     this.dataIndex = this.coins.favor.filter(item => item["coin"].indexOf(this.searchKey) == 0);
-      // }else 
-      if(this.basecion == "usdt"){
-          this.dataIndex = this.coins.USDT.filter(item => item["coin"].indexOf(this.searchKey) == 0);
-      }else if(this.basecion == "btc"){
-          this.dataIndex = this.coins.BTC.filter(item => item["coin"].indexOf(this.searchKey) == 0);
-      }else if(this.basecion == "eth"){
-          this.dataIndex = this.coins.ETH.filter(item => item["coin"].indexOf(this.searchKey) == 0);
+      // }else
+      if (this.basecion == "usdt") {
+        this.dataIndex = this.coins.USDT.filter(
+          (item) => item["coin"].indexOf(this.searchKey) == 0
+        );
+      } else if (this.basecion == "btc") {
+        this.dataIndex = this.coins.BTC.filter(
+          (item) => item["coin"].indexOf(this.searchKey) == 0
+        );
+      } else if (this.basecion == "eth") {
+        this.dataIndex = this.coins.ETH.filter(
+          (item) => item["coin"].indexOf(this.searchKey) == 0
+        );
       }
     },
     silderGo(silder, val) {
@@ -1443,19 +1459,12 @@ export default {
       // this.getCNYRate();
       this.getSymbolScale();
       this.getCoinInfo();
-      // this.startWebsock();
       this.getSymbol(); //包含 K线图、getFavor、startWebsock等
       // this.getPlateFull();
       this.getTrade();
-      if (this.isLogin) {
-        this.getWallet(); //账户资产信息
-        this.getCurrentOrder(); //当前委托
-        this.getHistoryOrder(); //历史委托
-      }
       this.sliderBuyLimitPercent = 0;
       this.sliderSellLimitPercent = 0;
       this.sliderBuyMarketPercent = 0;
-
     },
     tipFormat(val) {
       return val + "%";
@@ -1464,17 +1473,17 @@ export default {
       this.basecion = str;
       this.connectTickerSignal(sideCountryID, this.sideCountryID);
       this.sideCountryID = sideCountryID;
-console.log( 'changeBaseCion',str, this.coins )
-      if(str == "usdt"){
+      console.log("changeBaseCion", str, this.coins);
+      if (str == "usdt") {
         this.dataIndex = this.coins.USDT;
         this.dataIndex2 = this.coins.USDT2;
-      }else if(str == "btc"){
+      } else if (str == "btc") {
         this.dataIndex = this.coins.BTC;
         this.dataIndex2 = this.coins.BTC2;
-      }else if(str == "eth"){
+      } else if (str == "eth") {
         this.dataIndex = this.coins.ETH;
         this.dataIndex2 = this.coins.ETH2;
-      }else if(str == "favor"){
+      } else if (str == "favor") {
         this.dataIndex = this.coins.favor;
       }
     },
@@ -1515,7 +1524,7 @@ console.log( 'changeBaseCion',str, this.coins )
       this.coins.columns[0].title = this.$t("exchange.coin");
       this.coins.columns[1].title = this.$t("exchange.lastprice");
       this.coins.columns[2].title = this.$t("exchange.daychange");
-     // this.coins.columns[3].title = this.$t("exchange.favorite");
+      // this.coins.columns[3].title = this.$t("exchange.favorite");
 
       this.trade.columns[0].title = this.$t("exchange.num");
       this.trade.columns[1].title = this.$t("exchange.price");
@@ -1551,7 +1560,7 @@ console.log( 'changeBaseCion',str, this.coins )
     getCNYRate() {
       this.$http
         .post(this.host + "/market/exchange-rate/usd-cny")
-        .then(response => {
+        .then((response) => {
           var resp = response.body;
           this.CNYRate = resp.data;
         });
@@ -1579,7 +1588,7 @@ console.log( 'changeBaseCion',str, this.coins )
         debug: false,
         drawings_access: {
           type: "black",
-          tools: [{ name: "Regression Trend" }]
+          tools: [{ name: "Regression Trend" }],
         },
         disabled_features: [
           "header_resolutions",
@@ -1592,11 +1601,11 @@ console.log( 'changeBaseCion',str, this.coins )
           "header_saveload",
           "use_localstorage_for_settings",
           "left_toolbar",
-          "volume_force_overlay"
+          "volume_force_overlay",
         ],
         enabled_features: [
           "hide_last_na_study_output",
-          "move_logo_to_main_pane"
+          "move_logo_to_main_pane",
         ],
         custom_css_url: "bundles/common.css",
         supported_resolutions: ["1", "5", "30", "60", "1D", "1W", "1M"],
@@ -1620,14 +1629,14 @@ console.log( 'changeBaseCion',str, this.coins )
           "mainSeriesProperties.areaStyle.color1": "rgba(71, 78, 112, 0.5)",
           "mainSeriesProperties.areaStyle.color2": "rgba(71, 78, 112, 0.5)",
           "mainSeriesProperties.areaStyle.linecolor": "#9194a4",
-          "volumePaneSize": "small"
+          volumePaneSize: "small",
         },
         time_frames: [
           {
             text: "1min",
             resolution: "1",
             description: "realtime",
-            title: that.$t("exchange.realtime")
+            title: that.$t("exchange.realtime"),
           },
           { text: "1min", resolution: "1", description: "1min" },
           { text: "5min", resolution: "5", description: "5min" },
@@ -1636,23 +1645,23 @@ console.log( 'changeBaseCion',str, this.coins )
             text: "1hour",
             resolution: "60",
             description: "1hour",
-            title: "1hour"
+            title: "1hour",
           },
           /*{ text: "4hour", resolution: "240", description: "4hour",title: "4hour" },*/
           {
             text: "1day",
             resolution: "1D",
             description: "1day",
-            title: "1day"
+            title: "1day",
           },
           {
             text: "1week",
             resolution: "1W",
             description: "1week",
-            title: "1week"
+            title: "1week",
           },
-          { text: "1mon", resolution: "1M", description: "1mon" }
-        ]
+          { text: "1mon", resolution: "1M", description: "1mon" },
+        ],
       };
       if (that.skin === "day") {
         config.toolbar_bg = "#fff";
@@ -1663,34 +1672,34 @@ console.log( 'changeBaseCion',str, this.coins )
         config.overrides["mainSeriesProperties.candleStyle.downColor"] =
           "#ffa5a6";
       }
-      require(["@js/charting_library/charting_library.min.js"], function(tv) {
+      require(["@js/charting_library/charting_library.min.js"], function (tv) {
         var widget = (window.tvWidget = new TradingView.widget(config));
-        widget.onChartReady(function() {
+        widget.onChartReady(function () {
           widget.chart().executeActionById("drawingToolbarAction");
           widget
             .chart()
             .createStudy("Moving Average", false, false, [5], null, {
-              "plot.color": "#EDEDED"
+              "plot.color": "#EDEDED",
             });
           widget
             .chart()
             .createStudy("Moving Average", false, false, [10], null, {
-              "plot.color": "#ffe000"
+              "plot.color": "#ffe000",
             });
           widget
             .chart()
             .createStudy("Moving Average", false, false, [30], null, {
-              "plot.color": "#ce00ff"
+              "plot.color": "#ce00ff",
             });
           widget
             .chart()
             .createStudy("Moving Average", false, false, [60], null, {
-              "plot.color": "#00adff"
+              "plot.color": "#00adff",
             });
           widget
             .createButton()
             .attr("title", "realtime")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1706,7 +1715,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "M1")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1722,7 +1731,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "M5")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1738,7 +1747,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "M15")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1754,7 +1763,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "M30")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1770,7 +1779,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "H1")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1787,7 +1796,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "D1")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1803,7 +1812,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "W1")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1819,7 +1828,7 @@ console.log( 'changeBaseCion',str, this.coins )
           widget
             .createButton()
             .attr("title", "M1")
-            .on("click", function() {
+            .on("click", function () {
               if ($(this).hasClass("selected")) return;
               $(this)
                 .addClass("selected")
@@ -1838,7 +1847,7 @@ console.log( 'changeBaseCion',str, this.coins )
       //查询自选(收藏)
       this.$http
         .post(this.host + this.api.exchange.favorFind, {})
-        .then(response => {
+        .then((response) => {
           this.coins.favor = [];
           this.currentCoinIsFavor = false;
           var resp = response.body;
@@ -1856,107 +1865,114 @@ console.log( 'changeBaseCion',str, this.coins )
     },
     getSymbol() {
       $.ajax({
-        type: 'GET',
-        url:　 process.env.apiURL + "/zh-tw/Common/systemSettingEX",
+        type: "GET",
+        url: process.env.apiURL + "/zh-tw/Common/systemSettingEX",
         headers: {
-          NationID: 1
+          NationID: 1,
+        },
+      }).done((response) => {
+        var resp = [];
+
+        var exchangeData = response.data.find((x) => x.key == "exchange");
+        var cryptos = exchangeData.value.cryptos.filter(
+          (x) => x.fromCoinName == "BTC" || x.fromCoinName == "USDT"
+        );
+        var flatMoney = exchangeData.value.flatMoneys.filter(
+          (x) => x.fromCoinName == "TWD"
+        );
+        var targetData = [...cryptos, ...flatMoney];
+
+        for (var i = 0; i < targetData.length; i++) {
+          var record = targetData[i];
+          for (var j = 0; j < record.pairs.length; j++) {
+            var pair = record.pairs[j];
+            resp.push({
+              symbol: pair.toCoinName + "/" + record.fromCoinName,
+              open: 0,
+              high: 0,
+              low: 0,
+              close: 0,
+              chg: 0,
+              change: 0,
+              volume: 0,
+              turnover: 0,
+              lastDayClose: 0,
+              usdRate: 0,
+              baseUsdRate: 0,
+              zone: 0,
+              pairID: pair.pairID,
+              minAmt: pair.minAmt,
+              minPrice: pair.minPrice,
+              minDeal: pair.minDeal,
+              baseID: record.fromCoinID,
+              coinID: pair.toCoinID,
+            });
+          }
         }
-      })
-      .done(response => {
-          var resp = [];
 
-          var exchangeData = response.data.find(x => x.key == "exchange");
-          var cryptos = exchangeData.value.cryptos.filter(x => x.fromCoinName == "BTC" || x.fromCoinName == "USDT");
-          var flatMoney = exchangeData.value.flatMoneys.filter(x => x.fromCoinName == "TWD");
-          var targetData = [...cryptos, ...flatMoney];
+        //先清空已有数据
+        for (var i = 0; i < resp.length; i++) {
+          var coin = resp[i];
+          coin.base = resp[i].symbol.split("/")[1];
+          this.coins[coin.base] = [];
+          this.coins[coin.base + "2"] = [];
+          this.coins._map = [];
+          this.coins.favor = [];
+        }
 
-          for(var i = 0; i < targetData.length; i++){
-            var record = targetData[i];
-            for(var j = 0; j < record.pairs.length; j++){
-              var pair = record.pairs[j];
-              resp.push({
-                "symbol": pair.toCoinName + '/' + record.fromCoinName,
-                "open":0,
-                "high":0,
-                "low":0,
-                "close":0,
-                "chg":0,
-                "change":0,
-                "volume":0,
-                "turnover":0,
-                "lastDayClose":0,
-                "usdRate":0,
-                "baseUsdRate":0,
-                "zone":0,
-                "pairID": pair.pairID,
-                "minAmt": pair.minAmt,
-                "minPrice": pair.minPrice,
-                "minDeal": pair.minDeal
-              })
-            }
-          }
-
-          //先清空已有数据
-          for (var i = 0; i < resp.length; i++) {
-            var coin = resp[i];
-            coin.base = resp[i].symbol.split("/")[1];
-            this.coins[coin.base] = [];
-            this.coins[coin.base + "2"] = [];
-            this.coins._map = [];
-            this.coins.favor = [];
-          }
-          for (var i = 0; i < resp.length; i++) {
-            var coin = resp[i];
-            coin.price = resp[i].close = resp[i].close.toFixed(
+        for (var i = 0; i < resp.length; i++) {
+          var coin = resp[i];
+          coin.price = resp[i].close = resp[i].close.toFixed(
             this.baseCoinScale
           );
-            coin.rose =
-              resp[i].chg > 0
-                ? "+" + (resp[i].chg * 100).toFixed(2) + "%"
-                : (resp[i].chg * 100).toFixed(2) + "%";
-            coin.coin = resp[i].symbol.split("/")[0];
-            coin.base = resp[i].symbol.split("/")[1];
-            coin.href = (coin.coin + "_" + coin.base).toLowerCase();
-            coin.isFavor = false;
-            this.coins._map[coin.symbol] = coin;
-            if(coin.zone == 0){
-              this.coins[coin.base].push(coin);
-            }else{
-              this.coins[coin.base + "2"].push(coin);
-            }
-            if (coin.symbol == this.currentCoin.symbol) {
-              this.currentCoin = coin;
-              // this.form.buy.limitPrice = this.form.sell.limitPrice = coin.price;
-            }
+          coin.rose =
+            resp[i].chg > 0
+              ? "+" + (resp[i].chg * 100).toFixed(2) + "%"
+              : (resp[i].chg * 100).toFixed(2) + "%";
+          coin.coin = resp[i].symbol.split("/")[0];
+          coin.base = resp[i].symbol.split("/")[1];
+          coin.href = (coin.coin + "_" + coin.base).toLowerCase();
+          coin.isFavor = false;
+          this.coins._map[coin.symbol] = coin;
+          if (coin.zone == 0) {
+            this.coins[coin.base].push(coin);
+          } else {
+            this.coins[coin.base + "2"].push(coin);
           }
-          console.log("getSymbol", this.coins);
-          require(["../../assets/js/exchange.js"], function(e) {
-            e.clickScTab();
-          });
-
-          this.startWebsock();
-      })
+          if (coin.symbol == this.currentCoin.symbol) {
+            this.currentCoin = coin;
+          }
+        }
+        console.log("getSymbol", this.coins);
+        require(["../../assets/js/exchange.js"], function (e) {
+          e.clickScTab();
+        });
+        this.getCurrentOrder(); //当前委托
+        this.getHistoryOrder(); //历史委托
+        this.startWebsock();
+        this.getWallet();
+      });
     },
-    getCoinInfo(){
+    getCoinInfo() {
       //获取精度
       this.$http
         .post(this.host + this.api.market.coinInfo, {
-          unit: this.currentCoin.coin
+          unit: this.currentCoin.coin,
         })
-        .then(response => {
+        .then((response) => {
           var resp = response.body;
           if (resp != null) {
             this.coinInfo = resp;
           }
-      });
+        });
     },
     getSymbolScale() {
       //获取精度
       this.$http
         .post(this.host + this.api.market.symbolInfo, {
-          symbol: this.currentCoin.symbol
+          symbol: this.currentCoin.symbol,
         })
-        .then(response => {
+        .then((response) => {
           var resp = response.body;
           if (resp != null) {
             this.currentCoin.coinScale = resp.coinScale;
@@ -1975,155 +1991,164 @@ console.log( 'changeBaseCion',str, this.coins )
             this.startTime = resp.startTime;
             this.endTime = resp.endTime;
             this.clearTime = resp.clearTime;
-            this.currentTime = parseInt(resp.currentTime/1000);
+            this.currentTime = parseInt(resp.currentTime / 1000);
             this.publishAmount = resp.publishAmount;
             this.publishPrice = resp.publishPrice;
 
-            var temCurT = moment(resp.currentTime).format("YYYY-MM-DD HH:mm:ss");
-            if(temCurT < this.clearTime) {
-              if(this.publishType == "QIANGGOU" || this.publishType == "FENTAN"){
+            var temCurT = moment(resp.currentTime).format(
+              "YYYY-MM-DD HH:mm:ss"
+            );
+            if (temCurT < this.clearTime) {
+              if (
+                this.publishType == "QIANGGOU" ||
+                this.publishType == "FENTAN"
+              ) {
                 this.showPublish = true;
                 this.showCountDown = true;
-              }else{
+              } else {
                 this.showPublish = false;
                 this.showCountDown = false;
               }
-            }else{
+            } else {
               this.showPublish = false;
               this.showCountDown = false;
             }
 
             // 获取币种信息
-
           }
         });
     },
     getPlate() {
-      const record = this.coins[this.basecion.toUpperCase()].find(x => x.href == this.currentHref);
-      if(!record){
+      const record = this.coins[this.basecion.toUpperCase()].find(
+        (x) => x.href == this.currentHref
+      );
+      if (!record) {
         console.warn("record undefined");
         return;
       }
-      this.subscribeOrderProxy(record.pairID)
-        .then(result => {
-          console.log("getPlate", result);
+      this.subscribeOrderProxy(record.pairID).then((result) => {
+        console.log("getPlate", result);
 
-          this.currentCoin.price = result.unitPrice;
-          this.bidForm.price = result.unitPrice;
-          this.askForm.price = result.unitPrice;
+        this.currentCoin.price = result.unitPrice;
+        this.bidForm.price = result.unitPrice;
+        this.askForm.price = result.unitPrice;
 
-          this.plate.askRows = [];
-          this.plate.bidRows = [];
-          let resp = {
-            skin: "night",
-            ask: {
-              items: []
-            },
-            bid: {
-              items: []
-            }
-          };
+        this.plate.askRows = [];
+        this.plate.bidRows = [];
+        let resp = {
+          skin: "night",
+          ask: {
+            items: [],
+          },
+          bid: {
+            items: [],
+          },
+        };
 
-          for(var i = 0; i < result.askPreOrders.length; i++){
-            const ask = result.askPreOrders[i];
-            resp.ask.items.push({
-              price: ask.unitPrice,
-              amount: ask.volume
-            });
-          }
-          resp.ask.items.reverse();
-          for(var i = 0; i < result.bidPreOrders.length; i++){
-            const bid = result.bidPreOrders[i];
-            resp.bid.items.push({
-              price: bid.unitPrice,
-              amount: bid.volume
-            });
-          }
+        for (var i = 0; i < result.askPreOrders.length; i++) {
+          const ask = result.askPreOrders[i];
+          resp.ask.items.push({
+            price: ask.unitPrice,
+            amount: ask.volume,
+          });
+        }
+        resp.ask.items.reverse();
+        for (var i = 0; i < result.bidPreOrders.length; i++) {
+          const bid = result.bidPreOrders[i];
+          resp.bid.items.push({
+            price: bid.unitPrice,
+            amount: bid.volume,
+          });
+        }
 
-          if (resp.ask && resp.ask.items) {
-            for (var i = 0; i < resp.ask.items.length; i++) {
-              if (i == 0) {
-                resp.ask.items[i].totalAmount = resp.ask.items[i].amount;
-              } else {
-                resp.ask.items[i].totalAmount =
-                  resp.ask.items[i - 1].totalAmount + resp.ask.items[i].amount;
-              }
-            }
-            if (resp.ask.items.length >= this.plate.maxPostion) {
-              for (var i = this.plate.maxPostion; i > 0; i--) {
-                var ask = resp.ask.items[i - 1];
-                ask.direction = "SELL";
-                ask.position = i;
-                this.plate.askRows.push(ask);
-              }
-              const rows = this.plate.askRows,
-                len = rows.length,
-                totle = rows[0].totalAmount;
-              this.plate.askTotle = totle;
+        if (resp.ask && resp.ask.items) {
+          for (var i = 0; i < resp.ask.items.length; i++) {
+            if (i == 0) {
+              resp.ask.items[i].totalAmount = resp.ask.items[i].amount;
             } else {
-              for (var i = this.plate.maxPostion; i > resp.ask.items.length; i--) {
-                var ask = { price: 0, amount: 0 };
-                ask.direction = "SELL";
-                ask.position = i;
-                ask.totalAmount = ask.amount;
-                this.plate.askRows.push(ask);
-              }
-              for (var i = resp.ask.items.length; i > 0; i--) {
-                var ask = resp.ask.items[i - 1];
-                ask.direction = "SELL";
-                ask.position = i;
-                this.plate.askRows.push(ask);
-              }
-              var askItemIndex = (resp.ask.items.length - 1) > 0 ? (resp.ask.items.length - 1) : 0;
-              const rows = this.plate.askRows,
-                len = rows.length,
-                totle =
-                  rows[askItemIndex]
-                    .totalAmount;
-              this.plate.askTotle = totle;
+              resp.ask.items[i].totalAmount =
+                resp.ask.items[i - 1].totalAmount + resp.ask.items[i].amount;
             }
           }
-          if (resp.bid && resp.bid.items) {
-            for (var i = 0; i < resp.bid.items.length; i++) {
-              if (i == 0)
-                resp.bid.items[i].totalAmount = resp.bid.items[i].amount;
-              else
-                resp.bid.items[i].totalAmount =
-                  resp.bid.items[i - 1].totalAmount + resp.bid.items[i].amount;
+          if (resp.ask.items.length >= this.plate.maxPostion) {
+            for (var i = this.plate.maxPostion; i > 0; i--) {
+              var ask = resp.ask.items[i - 1];
+              ask.direction = "SELL";
+              ask.position = i;
+              this.plate.askRows.push(ask);
             }
-            for (var i = 0; i < resp.bid.items.length; i++) {
-              var bid = resp.bid.items[i];
+            const rows = this.plate.askRows,
+              len = rows.length,
+              totle = rows[0].totalAmount;
+            this.plate.askTotle = totle;
+          } else {
+            for (
+              var i = this.plate.maxPostion;
+              i > resp.ask.items.length;
+              i--
+            ) {
+              var ask = { price: 0, amount: 0 };
+              ask.direction = "SELL";
+              ask.position = i;
+              ask.totalAmount = ask.amount;
+              this.plate.askRows.push(ask);
+            }
+            for (var i = resp.ask.items.length; i > 0; i--) {
+              var ask = resp.ask.items[i - 1];
+              ask.direction = "SELL";
+              ask.position = i;
+              this.plate.askRows.push(ask);
+            }
+            var askItemIndex =
+              resp.ask.items.length - 1 > 0 ? resp.ask.items.length - 1 : 0;
+            const rows = this.plate.askRows,
+              len = rows.length,
+              totle = rows[askItemIndex].totalAmount;
+            this.plate.askTotle = totle;
+          }
+        }
+        if (resp.bid && resp.bid.items) {
+          for (var i = 0; i < resp.bid.items.length; i++) {
+            if (i == 0)
+              resp.bid.items[i].totalAmount = resp.bid.items[i].amount;
+            else
+              resp.bid.items[i].totalAmount =
+                resp.bid.items[i - 1].totalAmount + resp.bid.items[i].amount;
+          }
+          for (var i = 0; i < resp.bid.items.length; i++) {
+            var bid = resp.bid.items[i];
+            bid.direction = "BUY";
+            bid.position = i + 1;
+            this.plate.bidRows.push(bid);
+            if (i == this.plate.maxPostion - 1) break;
+          }
+          if (resp.bid.items.length < this.plate.maxPostion) {
+            for (
+              var i = resp.bid.items.length;
+              i < this.plate.maxPostion;
+              i++
+            ) {
+              var bid = { price: 0, amount: 0 };
               bid.direction = "BUY";
               bid.position = i + 1;
+              bid.totalAmount = 0;
               this.plate.bidRows.push(bid);
-              if (i == this.plate.maxPostion - 1) break;
             }
-            if (resp.bid.items.length < this.plate.maxPostion) {
-              for (
-                var i = resp.bid.items.length;
-                i < this.plate.maxPostion;
-                i++
-              ) {
-                var bid = { price: 0, amount: 0 };
-                bid.direction = "BUY";
-                bid.position = i + 1;
-                bid.totalAmount = 0;
-                this.plate.bidRows.push(bid);
-              }
-              var bidItemIndex = (resp.bid.items.length - 1) > 0 ? (resp.bid.items.length - 1) : 0;
-              const rows = this.plate.bidRows,
-                len = rows.length,
-                totle = rows[bidItemIndex].totalAmount;
-              this.plate.bidTotle = totle;
-            } else {
-              const rows = this.plate.bidRows,
-                len = rows.length,
-                totle = rows[len - 1].totalAmount;
-              this.plate.bidTotle = totle;
-            }
+            var bidItemIndex =
+              resp.bid.items.length - 1 > 0 ? resp.bid.items.length - 1 : 0;
+            const rows = this.plate.bidRows,
+              len = rows.length,
+              totle = rows[bidItemIndex].totalAmount;
+            this.plate.bidTotle = totle;
+          } else {
+            const rows = this.plate.bidRows,
+              len = rows.length,
+              totle = rows[len - 1].totalAmount;
+            this.plate.bidTotle = totle;
           }
-          this.$refs.depthGraph.draw(resp);
-        })
+        }
+        this.$refs.depthGraph.draw(resp);
+      });
     },
     getPlateFull() {
       //深度图
@@ -2131,9 +2156,8 @@ console.log( 'changeBaseCion',str, this.coins )
       params["symbol"] = this.currentCoin.symbol;
       this.$http
         .post(this.host + this.api.market.platefull, params)
-        .then(response => {
+        .then((response) => {
           var resp = response.body;
-          debugger;
           this.fullTrade = resp;
           resp.skin = this.skin;
           this.$refs.depthGraph.draw(resp);
@@ -2177,7 +2201,7 @@ console.log( 'changeBaseCion',str, this.coins )
       params["size"] = 20;
       this.$http
         .post(this.host + this.api.market.trade, params)
-        .then(response => {
+        .then((response) => {
           this.trade.rows = [];
           var resp = response.body;
           for (var i = 0; i < resp.length; i++) {
@@ -2188,30 +2212,34 @@ console.log( 'changeBaseCion',str, this.coins )
     startWebsock() {
       var that = this;
       this.hub = $.hubConnection(process.env.signalR);
-      this.proxy = this.hub.createHubProxy('TickerHub');
-      this.hub.start()
+      this.proxy = this.hub.createHubProxy("TickerHub");
+      this.hub
+        .start()
         .done(() => {
           console.log("socket connet suc");
-          this.subscribeTickersProxy(this.sideCountryID)
-            .then(result => {
-              var targetData = result.find(x => x.currencyCode == this.basecion.toUpperCase());
-              this.coins[this.basecion.toUpperCase()].forEach(item => {
-                var target = targetData.marketPriceList.find(x => x.pair == item.symbol);
-                item.close = target.buyPrice;
-                item.rose = target.upDownPercentage.toFixed(2) + "%";
-                item.high = target.high;
-                item.low = target.low;
-                item.volume = target.volume;
-              });
-              this.changeBaseCion(this.basecion, this.sideCountryID);
-            })
+          this.subscribeTickersProxy(this.sideCountryID).then((result) => {
+            var targetData = result.find(
+              (x) => x.currencyCode == this.basecion.toUpperCase()
+            );
+            this.coins[this.basecion.toUpperCase()].forEach((item) => {
+              var target = targetData.marketPriceList.find(
+                (x) => x.pair == item.symbol
+              );
+              item.close = target.buyPrice;
+              item.rose = target.upDownPercentage.toFixed(2) + "%";
+              item.high = target.high;
+              item.low = target.low;
+              item.volume = target.volume;
+            });
+            this.changeBaseCion(this.basecion, this.sideCountryID);
+          });
           this.getPlate(); //买卖盘
-    //   this.datafeed = new Datafeeds.WebsockFeed(
-    //     that.host + "/market",
-    //     that.currentCoin,
-    //     // stompClient,
-    //     that.baseCoinScale
-    // );
+          //   this.datafeed = new Datafeeds.WebsockFeed(
+          //     that.host + "/market",
+          //     that.currentCoin,
+          //     // stompClient,
+          //     that.baseCoinScale
+          // );
 
           this.datafeed = new Datafeeds.WebsockFeed(
             that.currentCoin,
@@ -2223,20 +2251,24 @@ console.log( 'changeBaseCion',str, this.coins )
         .fail(() => console.log("socket connet fail"));
 
       this.proxy
-        .on('SendTickersByNationID', result => {
+        .on("SendTickersByNationID", (result) => {
           const data = JSON.parse(result);
           console.log("SendTickersByNationID", data);
-          var targetData = data.find(x => x.currencyCode == this.basecion.toUpperCase());
-              this.coins[this.basecion.toUpperCase()].forEach(item => {
-                var target = targetData.marketPriceList.find(x => x.pair == item.symbol);
-                item.close = target.buyPrice;
-                item.rose = target.upDownPercentage.toFixed(2) + "%";
-                item.high = target.high;
-                item.low = target.low;
-                item.volume = target.volume;
-              });
+          var targetData = data.find(
+            (x) => x.currencyCode == this.basecion.toUpperCase()
+          );
+          this.coins[this.basecion.toUpperCase()].forEach((item) => {
+            var target = targetData.marketPriceList.find(
+              (x) => x.pair == item.symbol
+            );
+            item.close = target.buyPrice;
+            item.rose = target.upDownPercentage.toFixed(2) + "%";
+            item.high = target.high;
+            item.low = target.low;
+            item.volume = target.volume;
+          });
         })
-        .on('SendPreOrderByNationID', data => {
+        .on("SendPreOrderByNationID", (data) => {
           const result = JSON.parse(data);
           console.log("SendPreOrderByNationID", data);
           this.plate.askRows = [];
@@ -2245,26 +2277,26 @@ console.log( 'changeBaseCion',str, this.coins )
             skin: "night",
             ask: {
               direction: "SELL",
-              items: []
+              items: [],
             },
             bid: {
-              direction:"BUY",
-              items: []
-            }
+              direction: "BUY",
+              items: [],
+            },
           };
 
-          for(var i = 0; i < result.askPreOrders.length; i++){
+          for (var i = 0; i < result.askPreOrders.length; i++) {
             const ask = result.askPreOrders[i];
             resp.ask.items.push({
               price: ask.unitPrice,
-              amount: ask.volume
+              amount: ask.volume,
             });
           }
-          for(var i = 0; i < result.bidPreOrders.length; i++){
+          for (var i = 0; i < result.bidPreOrders.length; i++) {
             const bid = result.bidPreOrders[i];
             resp.bid.items.push({
               price: bid.unitPrice,
-              amount: bid.volume
+              amount: bid.volume,
             });
           }
 
@@ -2289,7 +2321,11 @@ console.log( 'changeBaseCion',str, this.coins )
                 totle = rows[0].totalAmount;
               this.plate.askTotle = totle;
             } else {
-              for (var i = this.plate.maxPostion; i > resp.ask.items.length; i--) {
+              for (
+                var i = this.plate.maxPostion;
+                i > resp.ask.items.length;
+                i--
+              ) {
                 var ask = { price: 0, amount: 0 };
                 ask.direction = "SELL";
                 ask.position = i;
@@ -2302,12 +2338,11 @@ console.log( 'changeBaseCion',str, this.coins )
                 ask.position = i;
                 this.plate.askRows.push(ask);
               }
-              var askItemIndex = (resp.ask.items.length - 1) > 0 ? (resp.ask.items.length - 1) : 0;
+              var askItemIndex =
+                resp.ask.items.length - 1 > 0 ? resp.ask.items.length - 1 : 0;
               const rows = this.plate.askRows,
                 len = rows.length,
-                totle =
-                  rows[askItemIndex]
-                    .totalAmount;
+                totle = rows[askItemIndex].totalAmount;
               this.plate.askTotle = totle;
             }
           }
@@ -2338,7 +2373,8 @@ console.log( 'changeBaseCion',str, this.coins )
                 bid.totalAmount = 0;
                 this.plate.bidRows.push(bid);
               }
-              var bidItemIndex = (resp.bid.items.length - 1) > 0 ? (resp.bid.items.length - 1) : 0;
+              var bidItemIndex =
+                resp.bid.items.length - 1 > 0 ? resp.bid.items.length - 1 : 0;
               const rows = this.plate.bidRows,
                 len = rows.length,
                 totle = rows[bidItemIndex].totalAmount;
@@ -2352,82 +2388,82 @@ console.log( 'changeBaseCion',str, this.coins )
           }
           resp.skin = this.skin;
           this.$refs.depthGraph.draw(resp);
-        })
-      
-      
+        });
     },
     subscribeTickersProxy(id) {
       return new Promise((resolve, reject) => {
         this.proxy
-          .invoke('SubscribeTickersByNationID', '' + id, '1')
-          .done(result => {
+          .invoke("SubscribeTickersByNationID", "" + id, "1")
+          .done((result) => {
             const data = JSON.parse(result);
             console.log("subscribeTickersProxy", data);
-            resolve(data)
+            resolve(data);
           })
-          .fail(error => {
-            reject(error)
-          })
-      })
+          .fail((error) => {
+            reject(error);
+          });
+      });
     },
     unsubscribeTickersProxy(id) {
       return new Promise((resolve, reject) => {
         this.proxy
-          .invoke('UnsubscribeTickersByNationID', '' + id, '1')
-          .done(result => {
-            resolve(result)
+          .invoke("UnsubscribeTickersByNationID", "" + id, "1")
+          .done((result) => {
+            resolve(result);
           })
-          .fail(error => {
-            reject(error)
-          })
-      })
+          .fail((error) => {
+            reject(error);
+          });
+      });
     },
     subscribeOrderProxy(id) {
-      
       return new Promise((resolve, reject) => {
         this.proxy
-          .invoke('SubscribePreOrdersByNationID', '' + id, '1')
-          .done(result => {
+          .invoke("SubscribePreOrdersByNationID", "" + id, "1")
+          .done((result) => {
             const data = JSON.parse(result);
             resolve(data);
           })
-          .fail(error => {
-            reject(error)
-          })
-      })
+          .fail((error) => {
+            reject(error);
+          });
+      });
     },
     unsubscribeOrderProxy(id) {
       return new Promise((resolve, reject) => {
         this.proxy
-          .invoke('UnsubscribePreOrdersByNationID', '' + id, '1')
-          .done(result => {
+          .invoke("UnsubscribePreOrdersByNationID", "" + id, "1")
+          .done((result) => {
             // this.hub.stop()
-            resolve(result)
+            resolve(result);
           })
-          .fail(error => {
-            reject(error)
-          })
-      })
+          .fail((error) => {
+            reject(error);
+          });
+      });
     },
     connectTickerSignal(newCountryID, oldCountryID) {
-      if (!this.proxy || !this.hub) return
+      if (!this.proxy || !this.hub) return;
 
       if (oldCountryID) {
-        this.unsubscribeTickersProxy(oldCountryID)
-          .catch(this.showError);
+        this.unsubscribeTickersProxy(oldCountryID).catch(this.showError);
       }
       if (newCountryID) {
         this.subscribeTickersProxy(newCountryID)
-          .then(result => {
-              var targetData = result.find(x => x.currencyCode == this.basecion.toUpperCase());
-              this.coins[this.basecion.toUpperCase()].forEach(item => {
-                var target = targetData.marketPriceList.find(x => x.pair == item.symbol);
-                item.close = target.buyPrice;
-                item.rose = target.upDownPercentage.toFixed(2) + "%";
-                item.high = target.high;
-                item.low = target.low;
-                item.volume = target.volume;
-              });
+          .then((result) => {
+            var targetData = result.find(
+              (x) => x.currencyCode == this.basecion.toUpperCase()
+            );
+            this.coins[this.basecion.toUpperCase()].forEach((item) => {
+              var target = targetData.marketPriceList.find(
+                (x) => x.pair == item.symbol
+              );
+              item.close = target.buyPrice;
+              item.rose = target.upDownPercentage.toFixed(2) + "%";
+              item.high = target.high;
+              item.low = target.low;
+              item.volume = target.volume;
+            });
           })
           .catch(this.showError);
       }
@@ -2438,46 +2474,6 @@ console.log( 'changeBaseCion',str, this.coins )
     market_price() {
       this.showMarket = true;
     },
-    currentCoinFavorChange() {
-      if (!this.isLogin) {
-        this.$Message.warning(this.$t("common.logintip"));
-        return;
-      }
-      if (this.collecRequesting) {
-        return;
-      }
-      const symbol = this.currentCoin.symbol;
-      this.collecRequesting = true;
-      if (this.currentCoinIsFavor) {
-        //已收藏,去取消收藏
-        this.$http
-          .post(this.host + this.api.exchange.favorDelete, {
-            symbol
-          })
-          .then(response => {
-            var resp = response.body;
-            if (resp.code == 0) {
-              this.$Message.info(this.$t("exchange.cancel_favorite"));
-              this.getSymbol(); //刷新状态
-              this.currentCoinIsFavor = false;
-            }
-            this.collecRequesting = false;
-          });
-      } else {
-        //去添加收藏
-        this.$http
-          .post(this.host + this.api.exchange.favorAdd, { symbol })
-          .then(response => {
-            var resp = response.body;
-            if (resp.code == 0) {
-              this.$Message.info(this.$t("exchange.do_favorite"));
-              this.getSymbol(); //刷新状态
-              this.currentCoinIsFavor = true;
-            }
-            this.collecRequesting = false;
-          });
-      }
-    },
     collect(index, row) {
       if (!this.isLogin) {
         this.$Message.info(this.$t("common.logintip"));
@@ -2487,7 +2483,7 @@ console.log( 'changeBaseCion',str, this.coins )
       params["symbol"] = row.symbol;
       this.$http
         .post(this.host + this.api.exchange.favorAdd, params)
-        .then(response => {
+        .then((response) => {
           var resp = response.body;
           if (resp.code == 0) {
             this.$Message.info(this.$t("exchange.do_favorite"));
@@ -2509,7 +2505,7 @@ console.log( 'changeBaseCion',str, this.coins )
       params["symbol"] = row.symbol;
       this.$http
         .post(this.host + this.api.exchange.favorDelete, params)
-        .then(response => {
+        .then((response) => {
           var resp = response.body;
           if (resp.code == 0) {
             this.$Message.info(this.$t("exchange.cancel_favorite"));
@@ -2530,195 +2526,11 @@ console.log( 'changeBaseCion',str, this.coins )
     gohref(currentRow, oldCurrentRow) {
       this.currentHref = currentRow.href;
       this.$router.push({
-          name: 'ExchangePair',
-          params: {
-            pair: currentRow.href
-          }
-        });
-    },
-    buyWithLimitPrice() {
-      if (this.form.buy.limitAmount == "") {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: this.$t("exchange.buyamounttip")
-        });
-        return;
-      }
-      var maxAmount = this.wallet.base / this.form.buy.limitPrice;
-      if (this.form.buy.limitAmount > maxAmount) {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc:
-            this.$t("exchange.buyamounttipwarning") + this.toFloor(maxAmount)
-        });
-        return;
-      }
-      var that = this;
-      var params = {};
-      params["symbol"] = this.currentCoin.symbol;
-      params["price"] = this.form.buy.limitPrice;
-      params["amount"] = this.form.buy.limitAmount;
-      params["direction"] = "BUY";
-      params["type"] = "LIMIT_PRICE";
-      params["useDiscount"] = this.isUseBHB ? "1" : "0"; //是否试用手续费抵扣,0 不使用 1使用
-      this.$http
-        .post(this.host + this.api.exchange.orderAdd, params)
-        .then(response => {
-          var resp = response.body;
-          if (resp.code == 0) {
-            this.$Notice.success({
-              title: that.$t("exchange.tip"),
-              desc: that.$t("exchange.success")
-            });
-            this.getWallet();
-            this.getCurrentOrder();
-            this.getHistoryOrder();
-            this.form.buy.limitAmount = 0;
-            this.sliderBuyLimitPercent = 0;
-          } else {
-            this.$Notice.error({
-              title: that.$t("exchange.tip"),
-              desc: resp.message
-            });
-          }
-        });
-    },
-    buyWithMarketPrice() {
-      if (this.form.buy.marketAmount == "") {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: this.$t("exchange.pricetip")
-        });
-        return;
-      }
-      if (this.form.buy.marketAmount > parseFloat(this.wallet.base)) {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: this.$t("exchange.pricetipwarning") + this.wallet.base
-        });
-        return;
-      }
-      var params = {};
-      params["symbol"] = this.currentCoin.symbol;
-      params["price"] = 0;
-      params["amount"] = this.form.buy.marketAmount;
-      params["direction"] = "BUY";
-      params["type"] = "MARKET_PRICE";
-      params["useDiscount"] = this.isUseBHB ? "1" : "0"; //是否试用手续费抵扣,0 不使用 1使用
-      var that = this;
-      this.$http
-        .post(this.host + this.api.exchange.orderAdd, params)
-        .then(response => {
-          var resp = response.body;
-          if (resp.code == 0) {
-            this.$Notice.success({
-              title: that.$t("exchange.tip"),
-              desc: that.$t("exchange.success")
-            });
-            this.refreshAccount();
-            this.sliderBuyMarketPercent = 0;
-          } else {
-            this.$Notice.error({
-              title: that.$t("exchange.tip"),
-              desc: resp.message
-            });
-          }
-        });
-    },
-    sellLimitPrice() {
-      if (this.form.sell.limitAmount == "") {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: this.$t("exchange.sellamounttip")
-        });
-        return;
-      }
-      if (this.form.sell.limitPrice == "") {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: this.$t("exchange.sellpricetip")
-        });
-        return;
-      }
-      if (this.form.sell.limitAmount > parseFloat(this.wallet.coin)) {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: "最多能卖" + this.wallet.coin + "个"
-        });
-        return;
-      }
-      var params = {};
-      params["symbol"] = this.currentCoin.symbol;
-      params["price"] = this.form.sell.limitPrice;
-      params["amount"] = this.form.sell.limitAmount;
-      params["direction"] = "SELL";
-      params["type"] = "LIMIT_PRICE";
-      params["useDiscount"] = this.isUseBHB ? "1" : "0"; //是否试用手续费抵扣,0 不使用 1使用
-      var that = this;
-      this.$http
-        .post(this.host + this.api.exchange.orderAdd, params)
-        .then(response => {
-          var resp = response.body;
-
-          if (resp.code == 0) {
-            this.$Notice.success({
-              title: that.$t("exchange.tip"),
-              desc: that.$t("exchange.success")
-            });
-            this.refreshAccount();
-            this.form.sell.limitAmount = 0;
-            this.sliderSellLimitPercent = 0;
-          } else {
-            this.$Notice.error({
-              title: that.$t("exchange.tip"),
-              desc: resp.message
-            });
-          }
-        });
-    },
-    sellMarketPrice() {
-      if (this.form.sell.marketAmount == "") {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          desc: this.$t("exchange.sellamounttip")
-        });
-        return;
-      }
-      if (this.form.sell.marketAmount > parseFloat(this.wallet.coin)) {
-        this.$Notice.error({
-          title: this.$t("exchange.tip"),
-          // desc: this.$t("exchange.sellamounttipwarning") + this.wallet.coin
-          desc: "最多能卖" + this.wallet.coin + "个"
-        });
-        return;
-      }
-
-      var params = {};
-      params["symbol"] = this.currentCoin.symbol;
-      params["price"] = 0;
-      params["amount"] = this.form.sell.marketAmount;
-      params["direction"] = "SELL";
-      params["type"] = "MARKET_PRICE";
-      params["useDiscount"] = this.isUseBHB ? "1" : "0"; //是否试用手续费抵扣,0 不使用 1使用
-      var that = this;
-      this.$http
-        .post(this.host + this.api.exchange.orderAdd, params)
-        .then(response => {
-          var resp = response.body;
-          if (resp.code == 0) {
-            this.$Notice.success({
-              title: that.$t("exchange.tip"),
-              desc: that.$t("exchange.success")
-            });
-            this.refreshAccount();
-            this.sliderSellMarketPercent = 0;
-          } else {
-            this.$Notice.error({
-              title: that.$t("exchange.tip"),
-              desc: resp.message
-            });
-          }
-        });
+        name: "ExchangePair",
+        params: {
+          pair: currentRow.href,
+        },
+      });
     },
     buyPlate(currentRow) {
       this.form.buy.limitPrice = currentRow.price;
@@ -2729,121 +2541,129 @@ console.log( 'changeBaseCion',str, this.coins )
       this.form.sell.limitPrice = currentRow.price;
     },
     /**
-     * 
+     *
      */
-    getWallet() { 
-      this.$http
-        .post(this.host + this.api.uc.wallet + this.currentCoin.base, {})
-        .then(response => {
-          var resp = response.body;
-          this.wallet.base = resp.data.balance || "";
-        });
-      this.$http
-        .post(this.host + this.api.uc.wallet + this.currentCoin.coin, {})
-        .then(response => {
-          var resp = response.body;
-          this.wallet.coin = resp.data.balance;
-        });
+    getWallet() {
+      $.ajax({
+        method: "GET",
+        url:
+          process.env.apiURL +
+          "/zh-tw/EXHotWallet/Asset/" +
+          this.currentCoin.baseID,
+        headers: {
+          Accept: "application/json",
+          NationID: 1,
+          "Content-Type": "application/json",
+          Authorization:
+            "bearer GscVUUYoH2NegDuaY5JZEkxEdPdHpFkZW5OVojtSTVDwIUkKUSnSQEHd8DGG6PCzGy2ZKjgEG-F-VlYDlLJkej2Jl8NXHEU0C93yU_stgWIf12wb_sJ6BWmlJIEncFfeG5AsPy4rF572gLd8f_SGAtRkoGnbrsPCiRn1KeKJLLOeT1DMaq1vqUa0UJhORmttatXI-ai3hOgDFJfQgQvsLpCn1lc",
+        },
+      })
+        .done((rep) => {
+          this.wallet.base = rep.data.totalAmount;
+        })
+        .fail((err) => console.log("get base amount fail"));
+      $.ajax({
+        method: "GET",
+        url:
+          process.env.apiURL +
+          "/zh-tw/EXHotWallet/Asset/" +
+          this.currentCoin.coinID,
+        headers: {
+          Accept: "application/json",
+          NationID: 1,
+          "Content-Type": "application/json",
+          Authorization:
+            "bearer GscVUUYoH2NegDuaY5JZEkxEdPdHpFkZW5OVojtSTVDwIUkKUSnSQEHd8DGG6PCzGy2ZKjgEG-F-VlYDlLJkej2Jl8NXHEU0C93yU_stgWIf12wb_sJ6BWmlJIEncFfeG5AsPy4rF572gLd8f_SGAtRkoGnbrsPCiRn1KeKJLLOeT1DMaq1vqUa0UJhORmttatXI-ai3hOgDFJfQgQvsLpCn1lc",
+        },
+      })
+        .done((rep) => {
+          this.wallet.coin = rep.data.totalAmount;
+        })
+        .fail((err) => console.log("get base amount fail"));
     },
     getCurrentOrder() {
-      //查询当前委托
-      var params = {};
-      params["pageNo"] = 0;
-      params["pageSize"] = 100;
-      params["symbol"] = this.currentCoin.symbol;
-      this.currentOrder.rows = [];
-      var that = this;
-      this.$http
-        .post(this.host + this.api.exchange.current, params)
-        .then(response => {
-          var resp = response.body;
-          if (resp.content.length > 0) {
-            this.currentOrder.rows = resp.content;
-            this.currentOrder.rows.forEach((row, index) => {
-              row.skin = that.skin;
-              row.price =
-                row.type == "MARKET_PRICE"
-                  ? that.$t("exchange.marketprice")
-                  : row.price;
-            });
-          }
-        });
+      debugger;
+      const pageNow = 1;
+      const pageSize = 1000;
+      const url = this.isHideOther
+        ? process.env.apiURL +
+          `/zh-tw/Order/TradingOrderByPair?pageNow=${pageNow}&pageSize=${pageSize}&pairID=${this.currentCoin.pairID}`
+        : process.env.apiURL +
+          `/zh-tw/Order/TradingOrder?pageNow=${pageNow}&pageSize=${pageSize}`;
+      $.ajax({
+        method: "GET",
+        url: url,
+        headers: {
+          Accept: "application/json",
+          NationID: 1,
+          "Content-Type": "application/json",
+          Authorization:
+            "bearer GscVUUYoH2NegDuaY5JZEkxEdPdHpFkZW5OVojtSTVDwIUkKUSnSQEHd8DGG6PCzGy2ZKjgEG-F-VlYDlLJkej2Jl8NXHEU0C93yU_stgWIf12wb_sJ6BWmlJIEncFfeG5AsPy4rF572gLd8f_SGAtRkoGnbrsPCiRn1KeKJLLOeT1DMaq1vqUa0UJhORmttatXI-ai3hOgDFJfQgQvsLpCn1lc",
+        },
+      })
+        .done((rep) => {
+          console.log("getCurrentOrder Suc", rep);
+          this.currentOrder = rep.data.rows;
+          this.currentOrder.forEach(item => {
+            item.createDate = item.createDate.replace("T", " ").split(".")[0];
+          })
+        })
+        .fail((err) => console.log("getCurrentOrderFail", err));
     },
     getHistoryOrder(pageNo) {
-      //查询历史委托
-      if (pageNo == undefined) {
-        pageNo = this.historyOrder.page;
-      } else {
-        pageNo = pageNo - 1;
-      }
-      this.historyOrder.rows = []; //清空数据
-      var params = {};
-      params["pageNo"] = pageNo;
-      params["pageSize"] = this.historyOrder.pageSize;
-      params["symbol"] = this.currentCoin.symbol;
-      var that = this;
-      this.$http
-        .post(this.host + this.api.exchange.history, params)
-        .then(response => {
-          var resp = response.body;
-          let rows = [];
-          if (resp.content.length > 0) {
-            this.historyOrder.total = resp.totalElements;
-            this.historyOrder.page = resp.number;
-            for (var i = 0; i < resp.content.length; i++) {
-              var row = resp.content[i];
-              if (row) {
-                row.skin = that.skin;
-                row.price =
-                  row.type == "MARKET_PRICE"
-                    ? that.$t("exchange.marketprice")
-                    : row.price;
-                // this.historyOrder.rows.push(row);
-                rows.push(row);
-              }
-            }
-            this.historyOrder.rows = rows;
-          }
-        });
+      const pageNow = 1;
+      const pageSize = 1000;
+      const url = process.env.apiURL +
+          `/zh-tw/Order/TradingOrderHistory?pageNow=${pageNow}&pageSize=${pageSize}`;
+      $.ajax({
+        method: "GET",
+        url: url,
+        headers: {
+          Accept: "application/json",
+          NationID: 1,
+          "Content-Type": "application/json",
+          Authorization:
+            "bearer GscVUUYoH2NegDuaY5JZEkxEdPdHpFkZW5OVojtSTVDwIUkKUSnSQEHd8DGG6PCzGy2ZKjgEG-F-VlYDlLJkej2Jl8NXHEU0C93yU_stgWIf12wb_sJ6BWmlJIEncFfeG5AsPy4rF572gLd8f_SGAtRkoGnbrsPCiRn1KeKJLLOeT1DMaq1vqUa0UJhORmttatXI-ai3hOgDFJfQgQvsLpCn1lc",
+        },
+      })
+        .done((rep) => {
+          console.log("getTradingOrderHistory Suc", rep);
+          this.historyOrder = rep.data.rows;
+          this.historyOrder.forEach(item => {
+            item.createDate = item.createDate.replace("T", " ").split(".")[0];
+          })
+        })
+        .fail((err) => console.log("getTradingOrderHistoryFail", err));
     },
     cancel(index) {
-      var order = this.currentOrder.rows[index];
-      this.$Modal.confirm({
-        title: "撤单提示",
-        content: this.$t("exchange.undotip"),
-        onOk: () => {
-          this.$http
-            .post(
-              this.host + this.api.exchange.orderCancel + "/" + order.orderId,
-              {}
-            )
-            .then(response => {
-              var resp = response.body;
-              if (resp.code == 0) {
-                this.refreshAccount();
-                this.$Notice.success({
-                  title: this.$t("exchange.tip"),
-                  desc: this.$t("exchange.cancelsuccess")
-                });
-              } else {
-                this.$Notice.error({
-                  title: this.$t("exchange.tip"),
-                  desc: resp.message
-                });
-              }
-            });
-        }
-      });
+      var order = this.currentOrder[index];
+       $.ajax({
+        method: "DELETE",
+        url: process.env.apiURL + `/zh-tw/Order/Cancel/${order.orderID}?transType=${order.transType}`,
+        headers: {
+          Accept: "application/json",
+          NationID: 1,
+          "Content-Type": "application/json",
+          Authorization:
+            "bearer GscVUUYoH2NegDuaY5JZEkxEdPdHpFkZW5OVojtSTVDwIUkKUSnSQEHd8DGG6PCzGy2ZKjgEG-F-VlYDlLJkej2Jl8NXHEU0C93yU_stgWIf12wb_sJ6BWmlJIEncFfeG5AsPy4rF572gLd8f_SGAtRkoGnbrsPCiRn1KeKJLLOeT1DMaq1vqUa0UJhORmttatXI-ai3hOgDFJfQgQvsLpCn1lc",
+        },
+      })
+        .done((rep) => {
+          console.log("cancel Suc", rep);
+          alert("掛單取消成功");
+          this.getCurrentOrder();
+        })
+        .fail((err) => console.log("cancelFail", err));
     },
-    refreshAccount: function() {
+    refreshAccount: function () {
       this.getCurrentOrder();
       this.getHistoryOrder();
       this.getWallet();
     },
-    timeFormat: function(tick) {
+    timeFormat: function (tick) {
       return moment(tick).format("HH:mm:ss");
     },
-    dateFormat: function(tick) {
+    dateFormat: function (tick) {
       return moment(tick).format("YYYY-MM-DD HH:mm:ss");
     },
     keyEvent(event) {
@@ -2872,59 +2692,121 @@ console.log( 'changeBaseCion',str, this.coins )
         .toString()
         .replace(re2, "$1");
     },
-    showPublishMask(){
-      if(!this.showPublish){
+    showPublishMask() {
+      if (!this.showPublish) {
         this.showPublish = true;
         console.log("show");
       }
     },
-    hidePublishMask(){
-      if(this.showPublish){
+    hidePublishMask() {
+      if (this.showPublish) {
         this.showPublish = false;
         console.log("hide");
       }
     },
-    hideCountDown(){
-      if(this.showCountDown){
+    hideCountDown() {
+      if (this.showCountDown) {
         this.showCountDown = false;
       }
     },
-    setPublishProgress(){
-
-    },
-    tradeTabChange(type){
-      if(type == "limit"){
+    setPublishProgress() {},
+    tradeTabChange(type) {
+      if (type == "limit") {
         this.orderType = "LimitPrice";
-      }else{
+      } else {
         this.orderType = "MarketPrice";
       }
     },
-    formChange(type, column){
-      debugger;
-      if(type == "b"){
-        switch(column){
-          case 'p':
-          case 'u':
+    formChange(type, column) {
+      var priceLimit = this.currentCoin.minPrice.toString().split(".")[1]
+        .length;
+      var amountLimit = this.currentCoin.minAmt.toString().split(".")[1].length;
+      if (type == "b") {
+        this.bidForm.price = parseFloat(this.bidForm.price).toFixed(priceLimit);
+        this.bidForm.unit = parseFloat(this.bidForm.unit).toFixed(amountLimit);
+        switch (column) {
+          case "p":
+          case "u":
             this.bidForm.total = this.bidForm.price * this.bidForm.unit;
             break;
-          case 't':
-            this.bidForm.unit = this.bidForm.total / this.bidForm.price; 
+          case "t":
+            this.bidForm.unit = this.bidForm.total / this.bidForm.price;
             break;
         }
       }
-      if(type=="s"){
-        switch(column){
-          case 'p':
-          case 'u':
+      if (type == "s") {
+        this.askForm.price = parseFloat(this.askForm.price).toFixed(priceLimit);
+        this.askForm.unit = parseFloat(this.askForm.unit).toFixed(amountLimit);
+        switch (column) {
+          case "p":
+          case "u":
             this.askForm.total = this.askForm.price * this.askForm.unit;
             break;
-          case 't':
-            this.askForm.unit = this.askForm.total / this.askForm.price; 
+          case "t":
+            this.askForm.unit = this.askForm.total / this.askForm.price;
             break;
         }
       }
-    }
-  }
+    },
+    createOrder(type) {
+      const obj = {};
+      if (type == "b") {
+        obj.transType = this.bidForm.transType;
+        obj.orderType = this.orderType == "LimitPrice" ? 1 : 2;
+        obj.pairID = this.currentCoin.pairID;
+        obj.amount = this.bidForm.unit;
+        obj.unitPrice = this.orderType == "LimitPrice" ? this.bidForm.price : 0;
+      }
+      if (type == "s") {
+        obj.transType = this.askForm.transType;
+        obj.orderType = this.orderType == "LimitPrice" ? 1 : 2;
+        obj.pairID = this.currentCoin.pairID;
+        obj.amount = this.askForm.unit;
+        obj.unitPrice = this.orderType == "LimitPrice" ? this.askForm.price : 0;
+      }
+      if (
+        this.orderType == "LimitPrice" &&
+        obj.amount * obj.unitPrice < this.currentCoin.minDeal
+      ) {
+        alert("lower than min deal " + this.currentCoin.minDeal);
+        return;
+      }
+
+      $.ajax({
+        method: "POST",
+        url: process.env.apiURL + "/zh-tw/Order/Create",
+        data: JSON.stringify(obj),
+        contentType: "application/json",
+        headers: {
+          Accept: "application/json",
+          NationID: 1,
+          "Content-Type": "application/json",
+          Authorization:
+            "bearer GscVUUYoH2NegDuaY5JZEkxEdPdHpFkZW5OVojtSTVDwIUkKUSnSQEHd8DGG6PCzGy2ZKjgEG-F-VlYDlLJkej2Jl8NXHEU0C93yU_stgWIf12wb_sJ6BWmlJIEncFfeG5AsPy4rF572gLd8f_SGAtRkoGnbrsPCiRn1KeKJLLOeT1DMaq1vqUa0UJhORmttatXI-ai3hOgDFJfQgQvsLpCn1lc",
+        },
+      })
+        .done((rep) => {
+          console.log("createOrderSuc", rep);
+          if (rep.status != 0) {
+            alert(rep.message);
+          } else {
+            alert("訂單建立成功");
+            this.getCurrentOrder();
+          }
+        })
+        .fail((err) => {
+          console.log("createOrderFail", err);
+        });
+    },
+    myOrderChange(type) {
+      this.historyActiveTab = type;
+      if(type=="cur"){
+        this.getCurrentOrder();
+      }else{
+        this.getHistoryOrder();
+      }
+    },
+  },
 };
 </script>
 
