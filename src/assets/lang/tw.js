@@ -149,7 +149,7 @@
         direction: '方嚮',
         time: '時間',
         stall: '檔位',
-        total: '纍計',
+        total: '成交額',
         traded: '已成交',
         action: '操作',
         undo: '撤單',

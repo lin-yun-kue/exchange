@@ -129,12 +129,12 @@
             <div class="trading_main">
                 <div class="trading_buy">
                   <div class="trading_row" v-show="orderType=='LimitPrice'">
-                    <input v-model.number="bidForm.price" @change="formChange('b', 'p')">
+                    <input v-model.number="bidForm.price" @keyup="formChange($event, 'b', 'p')">
                     <span class="title">限價</span>
                     <span class="unit" v-text="currentCoin.base"></span>
                   </div>
                   <div class="trading_row" style="margin-bottom: 40px;">
-                    <input v-model.number="bidForm.unit" @change="formChange('b', 'u')">
+                    <input v-model.number="bidForm.unit" @keyup="formChange($event, 'b', 'u')">
                     <span class="title">數量</span>
                     <span class="unit" v-text="currentCoin.coin"></span>
                   </div>
@@ -143,7 +143,7 @@
                     <span class="unit" v-text="wallet.base + currentCoin.base"></span>
                   </div>
                   <div class="trading_row">
-                    <input v-model.number="bidForm.total" @change="formChange('b', 't')">
+                    <input v-model.number="bidForm.total" @keyup="formChange($event, 'b', 't')">
                     <span class="title">金額</span>
                     <span class="unit" v-text="currentCoin.base"></span>
                   </div>
@@ -154,12 +154,12 @@
                   
                 <div class="trading_sell">
                   <div class="trading_row" v-show="orderType=='LimitPrice'">
-                    <input v-model.number="askForm.price" @change="formChange('s', 'p')">
+                    <input v-model.number="askForm.price" @keyup="formChange($event, 's', 'p')">
                     <span class="title">限價</span>
                     <span class="unit" v-text="currentCoin.base"></span>
                   </div>
                   <div class="trading_row" style="margin-bottom: 40px;">
-                    <input v-model.number="askForm.unit" @change="formChange('s', 'u')">
+                    <input v-model.number="askForm.unit" @keyup="formChange($event, 's', 'u')">
                     <span class="title">數量</span>
                     <span class="unit" v-text="currentCoin.coin"></span>
                   </div>
@@ -168,7 +168,7 @@
                     <span class="unit" v-text="wallet.coin + currentCoin.coin"></span>
                   </div>
                   <div class="trading_row">
-                    <input v-model.number="askForm.total" @change="formChange('s', 't')">
+                    <input v-model.number="askForm.total" @keyup="formChange($event, 's', 't')">
                     <span class="title">金額</span>
                     <span class="unit" v-text="currentCoin.base"></span>
                   </div>
@@ -177,9 +177,6 @@
                   </div>
                 </div>
             </div>
-            <!-- <div class="trading_footer">
-              
-            </div> -->
           </div>
         </div>
       </div>
@@ -1113,29 +1110,6 @@ export default {
       plate: {
         maxPostion: 10,
         columns: [
-          // {
-          //   title: self.$t("exchange.stall"),
-          //   key: "postion",
-          //   render: (h, params) => {
-          //     const row = params.row;
-          //     const className = row.direction.toLowerCase();
-          //     const title =
-          //       (row.direction == "BUY"
-          //         ? self.$t("exchange.buyin")
-          //         : self.$t("exchange.sellout")) +
-          //       " " +
-          //       row.position;
-          //     return h(
-          //       "span",
-          //       {
-          //         attrs: {
-          //           class: className
-          //         }
-          //       },
-          //       title
-          //     );
-          //   }
-          // },
           {
             //   价格;
             title: self.$t("exchange.price"),
@@ -1487,15 +1461,6 @@ export default {
         this.dataIndex = this.coins.favor;
       }
     },
-    // changePlate(str) {
-    //   if (str != "all") {
-    //     this.plate.maxPostion = 20;
-    //   } else {
-    //     this.plate.maxPostion = 10;
-    //   }
-    //   this.getPlate(str);
-    //   //this.selectedPlate = str;
-    // },
     changeImgTable(str) {
       this.currentImgTable = str;
     },
@@ -2063,12 +2028,8 @@ export default {
 
         if (resp.ask && resp.ask.items) {
           for (var i = 0; i < resp.ask.items.length; i++) {
-            if (i == 0) {
-              resp.ask.items[i].totalAmount = resp.ask.items[i].amount;
-            } else {
-              resp.ask.items[i].totalAmount =
-                resp.ask.items[i - 1].totalAmount + resp.ask.items[i].amount;
-            }
+            var item = resp.ask.items[i];
+            item.totalAmount = item.amount * item.price;
           }
           if (resp.ask.items.length >= this.plate.maxPostion) {
             for (var i = this.plate.maxPostion; i > 0; i--) {
@@ -2109,11 +2070,8 @@ export default {
         }
         if (resp.bid && resp.bid.items) {
           for (var i = 0; i < resp.bid.items.length; i++) {
-            if (i == 0)
-              resp.bid.items[i].totalAmount = resp.bid.items[i].amount;
-            else
-              resp.bid.items[i].totalAmount =
-                resp.bid.items[i - 1].totalAmount + resp.bid.items[i].amount;
+            var item = resp.bid.items[i];
+            item.totalAmount = item.amount * item.price;
           }
           for (var i = 0; i < resp.bid.items.length; i++) {
             var bid = resp.bid.items[i];
@@ -2533,12 +2491,16 @@ export default {
       });
     },
     buyPlate(currentRow) {
-      this.form.buy.limitPrice = currentRow.price;
-      this.form.sell.limitPrice = currentRow.price;
+      this.askForm.price = currentRow.price;
+      this.bidForm.price = currentRow.price;
+      this.formChange("b", "p");
+      this.formChange("s", "p");
     },
     sellPlate(currentRow) {
-      this.form.buy.limitPrice = currentRow.price;
-      this.form.sell.limitPrice = currentRow.price;
+      this.askForm.price = currentRow.price;
+      this.bidForm.price = currentRow.price;
+      this.formChange("b", "p");
+      this.formChange("s", "p");
     },
     /**
      *
@@ -2716,52 +2678,81 @@ export default {
         this.orderType = "MarketPrice";
       }
     },
-    formChange(type, column) {
-      var priceLimit = this.currentCoin.minPrice.toString().split(".")[1]
-        .length;
+    formChange(evt, type, column) {
+      if (evt.which < 48 || evt.which > 57){
+        if(type == "b"){
+        if(Number.isNaN(Number(this.bidForm.price))){
+          this.bidForm.price = "";
+        }
+        if(Number.isNaN(Number(this.bidForm.unit))){
+          this.bidForm.unit = "";
+        }
+        if(Number.isNaN(Number(this.bidForm.total))){
+          this.bidForm.total = "";
+        }
+        }
+      if(type == "s"){
+        if(Number.isNaN(Number(this.askForm.price))){
+          this.askForm.price = 0;
+        }
+        if(Number.isNaN(Number(this.askForm.unit))){
+          this.askForm.unit = 0;
+        }
+        if(Number.isNaN(Number(this.askForm.total))){
+          this.askForm.total = 0;
+        }
+      }
+        evt.preventDefault();
+        return;
+      }
+      
+
+      var priceLimit = this.currentCoin.minPrice.toString().split(".")[1].length;
       var amountLimit = this.currentCoin.minAmt.toString().split(".")[1].length;
       if (type == "b") {
-        this.bidForm.price = parseFloat(this.bidForm.price).toFixed(priceLimit);
-        this.bidForm.unit = parseFloat(this.bidForm.unit).toFixed(amountLimit);
         switch (column) {
           case "p":
-          case "u":
-            this.bidForm.total = this.bidForm.price * this.bidForm.unit;
+            case "u":
+              this.bidForm.total = this.bidForm.price * this.bidForm.unit;
+              this.bidForm.total = parseFloat(this.bidForm.total).toFixed(priceLimit);
             break;
           case "t":
             this.bidForm.unit = this.bidForm.total / this.bidForm.price;
+            this.bidForm.unit = parseFloat(this.bidForm.unit).toFixed(amountLimit);
             break;
         }
       }
       if (type == "s") {
-        this.askForm.price = parseFloat(this.askForm.price).toFixed(priceLimit);
-        this.askForm.unit = parseFloat(this.askForm.unit).toFixed(amountLimit);
         switch (column) {
           case "p":
-          case "u":
-            this.askForm.total = this.askForm.price * this.askForm.unit;
+            case "u":
+              this.askForm.total = this.askForm.price * this.askForm.unit;
+              this.askForm.price = parseFloat(this.askForm.price).toFixed(priceLimit);
             break;
           case "t":
             this.askForm.unit = this.askForm.total / this.askForm.price;
+            this.askForm.unit = parseFloat(this.askForm.unit).toFixed(amountLimit);
             break;
         }
       }
     },
     createOrder(type) {
+      var priceLimit = this.currentCoin.minPrice.toString().split(".")[1].length;
+      var amountLimit = this.currentCoin.minAmt.toString().split(".")[1].length;
       const obj = {};
       if (type == "b") {
         obj.transType = this.bidForm.transType;
         obj.orderType = this.orderType == "LimitPrice" ? 1 : 2;
         obj.pairID = this.currentCoin.pairID;
-        obj.amount = this.bidForm.unit;
-        obj.unitPrice = this.orderType == "LimitPrice" ? this.bidForm.price : 0;
+        obj.amount = this.bidForm.unit.toFixed(amountLimit);
+        obj.unitPrice = this.orderType == "LimitPrice" ? this.bidForm.price.toFixed(priceLimit) : 0;
       }
       if (type == "s") {
         obj.transType = this.askForm.transType;
         obj.orderType = this.orderType == "LimitPrice" ? 1 : 2;
         obj.pairID = this.currentCoin.pairID;
-        obj.amount = this.askForm.unit;
-        obj.unitPrice = this.orderType == "LimitPrice" ? this.askForm.price : 0;
+        obj.amount = this.askForm.unit.toFixed(amountLimit);
+        obj.unitPrice = this.orderType == "LimitPrice" ? this.askForm.price.toFixed(priceLimit) : 0;
       }
       if (
         this.orderType == "LimitPrice" &&
